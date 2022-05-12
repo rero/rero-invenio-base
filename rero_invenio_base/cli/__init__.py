@@ -15,36 +15,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""Click command-line utilities."""
 
-[build_sphinx]
-source-dir = docs/
-build-dir = docs/_build
-all_files = 1
+from __future__ import absolute_import, print_function
 
-[bdist_wheel]
-universal = 1
+import click
 
-[pydocstyle]
-add_ignore = D401
+from .utils import utils
 
-[pycodestyle]
-exclude = docs/conf.py
 
-[compile_catalog]
-directory = rero_invenio_base/translations/
-use-fuzzy = True
+@click.group()
+def rero():
+    """RERO management commands."""
 
-[extract_messages]
-copyright_holder = RERO
-msgid_bugs_address = software@rero.ch
-mapping-file = babel.ini
-output-file = rero_invenio_base/translations/messages.pot
-add-comments = NOTE
 
-[init_catalog]
-input-file = rero_invenio_base/translations/messages.pot
-output-dir = rero_invenio_base/translations/
+rero.add_command(utils)
 
-[update_catalog]
-input-file = rero_invenio_base/translations/messages.pot
-output-dir = rero_invenio_base/translations/
+__all__ = ('rero')

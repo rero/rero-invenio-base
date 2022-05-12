@@ -13,7 +13,7 @@
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Generic backend libraries for RERO Invenio instances."""
 
@@ -26,6 +26,8 @@ history = open('CHANGES.rst').read()
 
 tests_require = [
     'pytest-invenio>=1.4.0',
+    'safety>=1.8',
+    'autoflake>=1.3.1'
 ]
 
 extras_require = {
@@ -45,7 +47,8 @@ setup_requires = [
 
 install_requires = [
     'invenio-i18n>=1.2.0',
-    'jinja2>=2.11,<3.1'
+    'jinja2>=2.0,<3.1',
+    'PyYAML>=5.3.1'
 ]
 
 packages = find_packages()
@@ -78,6 +81,10 @@ setup(
         'invenio_i18n.translations': [
             'messages = rero_invenio_base',
         ],
+        'flask.commands': [
+            'rero = rero_invenio_base.cli:rero',
+        ],
+
     },
     extras_require=extras_require,
     install_requires=install_requires,
