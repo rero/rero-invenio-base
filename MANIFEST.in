@@ -13,7 +13,7 @@
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 include .dockerignore
 include .editorconfig
@@ -26,6 +26,7 @@ recursive-include rero_invenio_base/translations *.po *.pot *.mo
 include *.rst
 include *.sh
 include *.txt
+include *.yml
 include babel.ini
 include pytest.ini
 recursive-include docs *.bat
@@ -36,3 +37,4 @@ recursive-include docs Makefile
 recursive-include rero_invenio_base *.html
 recursive-include rero_invenio_base *.py
 recursive-include tests *.py
+recursive-include tests *.json
