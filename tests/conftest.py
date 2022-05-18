@@ -24,7 +24,8 @@ fixtures are available.
 
 import pytest
 from flask import Flask
-from flask_babelex import Babel
+from invenio_db import InvenioDB
+from invenio_search import InvenioSearch
 
 from rero_invenio_base import REROInvenioBase
 
@@ -44,7 +45,8 @@ def create_app(instance_path):
     def factory(**config):
         app = Flask('testapp', instance_path=instance_path)
         app.config.update(**config)
-        Babel(app)
         REROInvenioBase(app)
+        InvenioDB(app)
+        InvenioSearch(app)
         return app
     return factory

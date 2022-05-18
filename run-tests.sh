@@ -33,7 +33,7 @@ function cleanup() {
     echo "Done"
 }
 trap cleanup EXIT
-safety check
+safety check -i 42194
 flask rero utils check_license check_license_config.yml
 pydocstyle rero_ils tests docs
 isort --check-only --diff rero_invenio_base tests
@@ -42,7 +42,6 @@ autoflake -c -r --remove-all-unused-imports --ignore-init-module-imports . &> /d
     exit 1
 }
 
-python -m check_manifest --ignore ".*-requirements.txt"
 python -m sphinx.cmd.build -qnNW docs docs/_build/html
 # Note: for now we do not need this for the tests.
 eval "$(docker-services-cli up --search ${SEARCH:-elasticsearch} --env)"
