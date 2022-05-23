@@ -44,6 +44,7 @@ autoflake -c -r --remove-all-unused-imports --ignore-init-module-imports . &> /d
 
 python -m sphinx.cmd.build -qnNW docs docs/_build/html
 # Note: for now we do not need this for the tests.
+export DOCKER_SERVICES_FILEPATH=./docker-services.yml
 eval "$(docker-services-cli up --search ${SEARCH:-elasticsearch} --env)"
 python -m pytest
 tests_exit_code=$?
