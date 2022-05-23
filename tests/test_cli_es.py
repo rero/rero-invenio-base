@@ -17,27 +17,21 @@
 
 """Test cli elasticsearch commands."""
 
-from click.testing import CliRunner
-from invenio_search import current_search_client
 
 from rero_invenio_base.cli.es.alias import delete_alias, get_alias, put_alias
 from rero_invenio_base.cli.es.index import close_index, create_index, \
     open_index, switch_index, update_mapping
+from rero_invenio_base.cli.es.snapshot.cli import create_snapshot, \
+    delete_snapshot, list_snapshot, restore_snapshot
+from rero_invenio_base.cli.es.snapshot.repository import create_repository, \
+    delete_repository, list_repository
 
 
-def test_cli_es_create(script_info, app, es):
-    """Test JOSON indentation cli."""
-    new_index_name1 = 'records-record-v1.0.0'
-    new_index_name2 = 'records-2'
-    for i in [new_index_name1, new_index_name2]:
-        current_search_client.indices.delete(
-            index=i,
-            ignore=[400, 404],
-        )
-    search = app.extensions['invenio-search']
-    search.register_mappings('records', 'mock_modules.mappings')
+def test_cli_es_index_alias(script_info, app, es_runner, new_index_name1,
+                            new_index_name2):
+    """Test index and aliases command line interface."""
 
-    runner = CliRunner()
+    runner = es_runner
 
     res = runner.invoke(
         create_index,
@@ -109,8 +103,70 @@ def test_cli_es_create(script_info, app, es):
     )
     assert res.exit_code == 0
 
-    for i in [new_index_name1, new_index_name2]:
-        current_search_client.indices.delete(
-            index=i,
-            ignore=[400, 404],
-        )
+
+def test_cli_es_snapshot_repository(
+    script_info, app, es_runner, new_index_name1
+):
+    """Test index and aliases command line interface."""
+    runner = es_runner
+
+    res = runner.invoke(
+        create_repository,
+        ['tests', 'snap'],
+        obj=script_info
+    )
+    assert res.exit_code == 0
+
+    res = runner.invoke(
+        list_repository,
+        [],
+        obj=script_info
+    )
+
+    assert res.exit_code == 0
+
+    res = runner.invoke(
+        delete_repository,
+        ['tests', '--yes-i-know'],
+        obj=script_info
+    )
+    assert res.exit_code == 0
+
+
+def test_cli_es_snapshots(script_info, app, es_runner, new_index_name1):
+    """Test index and aliases command line interface."""
+    runner = es_runner
+
+    res = runner.invoke(
+        create_repository,
+        ['tests', 'snap'],
+        obj=script_info
+    )
+
+    res = runner.invoke(
+        create_snapshot,
+        ['test'],
+        obj=script_info
+    )
+    assert res.exit_code == 0
+
+    res = runner.invoke(
+        list_snapshot,
+        ['tests'],
+        obj=script_info
+    )
+    assert res.exit_code == 0
+
+    res = runner.invoke(
+        restore_snapshot,
+        ['snap', 'test'],
+        obj=script_info
+    )
+
+    assert res.exit_code == 0
+    res = runner.invoke(
+        delete_snapshot,
+        ['snap', 'test', '--yes-i-know'],
+        obj=script_info
+    )
+    assert res.exit_code == 0

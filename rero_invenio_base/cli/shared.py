@@ -15,22 +15,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-"""Click elasticsearch command-line utilities."""
-
-import click
-
-from .alias import alias
-from .index import index
-from .snapshot import snapshot
+"""Command-line utilities shared functions."""
 
 
-@click.group()
-def es():
-    """Elasticsarch management commands."""
-
-
-es.add_command(index)
-es.add_command(alias)
-es.add_command(snapshot)
-
-__all__ = ('index')
+def abort_if_false(ctx, param, value):
+    """Abort command is value is False."""
+    if not value:
+        ctx.abort()

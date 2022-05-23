@@ -22,12 +22,46 @@ fixtures are available.
 """
 
 
+import contextlib
+
 import pytest
+from click.testing import CliRunner
 from flask import Flask
 from invenio_db import InvenioDB
-from invenio_search import InvenioSearch
+from invenio_search import InvenioSearch, current_search_client
 
 from rero_invenio_base import REROInvenioBase
+
+
+@pytest.fixture(scope='function')
+def new_index_name1():
+    """Fixtures index name."""
+    yield 'records-record-v1.0.0'
+
+
+@pytest.fixture(scope='function')
+def new_index_name2():
+    """An other fixture index name."""
+    yield 'records-2'
+
+
+@pytest.fixture(scope='function')
+def es_runner(app, es, new_index_name1, new_index_name2):
+    """A cli runner that create and remove indexes into es."""
+    for i in [new_index_name1, new_index_name2]:
+        current_search_client.indices.delete(
+            index=i,
+            ignore=[400, 404],
+        )
+    search = app.extensions['invenio-search']
+    with contextlib.suppress(AssertionError):
+        search.register_mappings('records', 'mock_modules.mappings')
+    yield CliRunner()
+    for i in [new_index_name1, new_index_name2]:
+        current_search_client.indices.delete(
+            index=i,
+            ignore=[400, 404],
+        )
 
 
 @pytest.fixture(scope='module')

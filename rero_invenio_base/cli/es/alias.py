@@ -23,11 +23,7 @@ import click
 from flask.cli import with_appcontext
 from invenio_search import current_search_client
 
-
-def abort_if_false(ctx, param, value):
-    """Abort command is value is False."""
-    if not value:
-        ctx.abort()
+from ..shared import abort_if_false
 
 
 @click.group()
