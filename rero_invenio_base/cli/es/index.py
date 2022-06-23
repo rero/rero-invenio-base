@@ -30,6 +30,31 @@ def index():
     """Elasticsearch index commands."""
 
 
+@index.command('reindex')
+@with_appcontext
+@es_version_check
+@click.argument('source')
+@click.argument('destination')
+def reindex(source, destination):
+    """Reindex from source.
+
+    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-reindex.html # noqa
+    """
+    res = current_search_client.reindex(
+        body=dict(
+            source=dict(
+                index=source
+            ),
+            dest=dict(
+                index=destination,
+                version_type='external_gte'
+            )
+        ),
+        wait_for_completion=False
+    )
+    click.secho(f'Task: {res["task"]}', fg='green')
+
+
 @index.command('open')
 @with_appcontext
 @click.option('-i', '--index', help="default=_all", default='_all')
@@ -73,7 +98,7 @@ def switch_index(old, new):
     click.secho('Sucessfully switched.', fg='green')
 
 
-@index.command('create_index')
+@index.command('create')
 @with_appcontext
 @es_version_check
 @click.option(
