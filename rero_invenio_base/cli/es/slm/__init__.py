@@ -15,24 +15,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-"""Click elasticsearch command-line utilities."""
+"""Click elasticsearch command-line snapshot lifecycle management."""
 
-import click
+from .cli import slm
 
-from .alias import alias
-from .index import index
-from .slm import slm
-from .snapshot import snapshot
-
-
-@click.group()
-def es():
-    """Elasticsarch management commands."""
-
-
-es.add_command(index)
-es.add_command(alias)
-es.add_command(slm)
-es.add_command(snapshot)
-
-__all__ = ('index')
+__all__ = ('slm')
