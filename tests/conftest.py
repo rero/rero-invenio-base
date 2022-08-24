@@ -23,14 +23,17 @@ fixtures are available.
 
 
 import contextlib
+import copy
 
 import pytest
 from click.testing import CliRunner
 from flask import Flask
 from invenio_db import InvenioDB
+from invenio_records_rest import config as _config
 from invenio_search import InvenioSearch, current_search_client
 
 from rero_invenio_base import REROInvenioBase
+from rero_invenio_base.modules.export.ext import ReroInvenioBaseExportApp
 
 
 @pytest.fixture(scope='function')
@@ -79,7 +82,12 @@ def create_app(instance_path):
     def factory(**config):
         app = Flask('testapp', instance_path=instance_path)
         app.config.update(**config)
+        app.config.update(
+            RECORDS_REST_ENDPOINTS=copy.deepcopy(
+                _config.RECORDS_REST_ENDPOINTS)
+        )
         REROInvenioBase(app)
+        ReroInvenioBaseExportApp(app)
         InvenioDB(app)
         InvenioSearch(app)
         return app
