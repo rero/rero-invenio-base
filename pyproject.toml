@@ -11,6 +11,7 @@ PyYAML = "^6.0"
 invenio-search = {version = "^1.4.2", extras = ["elasticsearch7"]}
 jsonpatch = "^1.32"
 invenio-db = "^1.0.14"
+invenio-records-rest = "*"
 
 [tool.poetry.dev-dependencies]
 safety = "^1.10.3"
@@ -30,3 +31,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.plugins."flask.commands"]
 rero = "rero_invenio_base.cli:rero"
+
+[tool.poetry.plugins."invenio_base.apps"]
+rero-invenio-base-export = "rero_invenio_base.modules.export.ext:ReroInvenioBaseExportApp"
+
+[tool.poetry.plugins."invenio_base.api_blueprints"]
+rero_ils_exports = "rero_invenio_base.modules.export.views:create_blueprint_from_app"
+

@@ -33,7 +33,19 @@ function cleanup() {
     echo "Done"
 }
 trap cleanup EXIT
-safety check -i 42194
+
+# Check vulnerabilities:
+#
+# Exception are
+# +============================+===========+==========================+==========+
+# | package                    | installed | affected                 | ID       |
+# +============================+===========+==========================+==========+
+# | kombu                      | 5.1.0     | <5.2.1                   | 42497    |
+# | celery                     | 5.0.2     | <5.2.0                   | 42498    |
+# | celery                     | 5.0.2     | <5.2.2                   | 43738    |
+# +==============================================================================+
+safety check -i 42194 -i 42497 -i 42498 -i 43738
+
 flask rero utils check_license check_license_config.yml
 pydocstyle rero_ils tests docs
 isort --check-only --diff rero_invenio_base tests
