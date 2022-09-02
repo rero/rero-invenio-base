@@ -2,6 +2,7 @@
 name = "rero-invenio-base"
 version = "0.1.0"
 description = "Generic backend libraries for RERO Invenio instances."
+readme = "README.rst"
 authors = ["RERO <software@rero.ch>"]
 license = "GNU Affero General Public License v3.0"
 
