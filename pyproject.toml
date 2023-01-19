@@ -7,7 +7,7 @@ authors = ["RERO <software@rero.ch>"]
 license = "GNU Affero General Public License v3.0"
 
 [tool.poetry.dependencies]
-python = ">3.7, <3.10"
+python = ">=3.8, <3.10"
 PyYAML = "^6.0"
 invenio-search = {version = "^1.4.2", extras = ["elasticsearch7"]}
 jsonpatch = "^1.32"
@@ -15,6 +15,8 @@ invenio-db = "^1.0.14"
 invenio-records-rest = "*"
 Mako = ">=1.2.2"
 dparse = ">=0.5.2"
+invenio-indexer = "<2.0.0"
+pydocstyle = "<6.2.0"
 
 [tool.poetry.dev-dependencies]
 safety = "^1.10.3"
@@ -41,3 +43,5 @@ rero-invenio-base-export = "rero_invenio_base.modules.export.ext:ReroInvenioBase
 [tool.poetry.plugins."invenio_base.api_blueprints"]
 rero_ils_exports = "rero_invenio_base.modules.export.views:create_blueprint_from_app"
 
+[tool.poetry.plugins."invenio_celery.tasks"]
+rero = "rero_invenio_base.modules.tasks"
