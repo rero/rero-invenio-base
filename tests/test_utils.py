@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # RERO Invenio Base
-# Copyright (C) 2022 RERO.
+# Copyright (C) 2023 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -15,6 +15,25 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[pytest]
-addopts = --color=yes --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov=rero_invenio_base --cov-report=term-missing
-testpaths = docs tests rero_invenio_base
+"""Test utils functions."""
+
+from rero_invenio_base.modules.utils import chunk
+
+
+def test_utils():
+    """Test utils functions."""
+    assert list(chunk([1, 2, 3, 4, 5], 2)) == [(1, 2), (3, 4), (5, )]
+
+    assert list(chunk(range(1, 6), 2)) == [(1, 2), (3, 4), (5, )]
+
+    assert list(chunk(range(120), 50)) == [
+        tuple(range(50)),
+        tuple(range(50, 100)),
+        tuple(range(100, 120)),
+    ]
+
+    assert list(chunk(list(range(120)), 50)) == [
+        tuple(range(50)),
+        tuple(range(50, 100)),
+        tuple(range(100, 120)),
+    ]

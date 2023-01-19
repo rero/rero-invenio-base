@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # RERO Invenio Base
-# Copyright (C) 2022 RERO.
+# Copyright (C) 2023 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -15,6 +15,21 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[pytest]
-addopts = --color=yes --isort --pydocstyle --pycodestyle --doctest-glob="*.rst" --doctest-modules --cov=rero_invenio_base --cov-report=term-missing
-testpaths = docs tests rero_invenio_base
+"""Generic utils functions."""
+
+from itertools import islice
+
+
+def chunk(iterable, size):
+    """Split a list of value into a list of chunks.
+
+    :param iterable: an iterator or list to be splitted
+    :param size: integer - the chunk size
+    :return: an iterator on the chunks
+
+    Example:
+        list(chunk([1, 2, 3, 4, 5], 2)) == [(1, 2), (3, 4), (5, )]
+    """
+    it = iter(iterable)
+    while chunk := tuple(islice(it, size)):
+        yield chunk
