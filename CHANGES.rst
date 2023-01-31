@@ -17,6 +17,10 @@
 Changes
 =======
 
+Version 0.2.0
+
+- task: add a generic celery task.
+
 Version 0.1.0
 
 - Initial public release.
