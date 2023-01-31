@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.0](https://github.com/rero/rero-invenio-base/tree/v0.2.0) (2023-01-31)
+
+[Full Changelog](https://github.com/rero/rero-invenio-base/compare/...v0.2.0)
+
+**Changes:**
+
+* task: add a generic celery task [\#10](https://github.com/rero/rero-invenio-base/pull/10) (by @jma)
+
 ## [v0.1.0](https://github.com/rero/rero-invenio-base/tree/v0.1.0) (2022-09-02)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/...v0.1.0)
