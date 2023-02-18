@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rero-invenio-base"
-version = "0.2.0"
+version = "0.2.1"
 description = "Generic backend libraries for RERO Invenio instances."
 readme = "README.rst"
 authors = ["RERO <software@rero.ch>"]
@@ -8,22 +8,24 @@ license = "GNU Affero General Public License v3.0"
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.10"
-PyYAML = "^6.0"
-invenio-search = {version = "^1.4.2", extras = ["elasticsearch7"]}
-jsonpatch = "^1.32"
-invenio-db = "^1.0.14"
-invenio-records-rest = "*"
+PyYAML = "<=7.0"
+jsonpatch = "<=2.0"
 Mako = ">=1.2.2"
 dparse = ">=0.5.2"
-invenio-indexer = "<2.0.0"
-pydocstyle = "<6.2.0"
+invenio-search = {version = ">=1.4.2,<3.0.0", extras = ["elasticsearch7"]}
+invenio-db = {version = ">=1.0.14,<1.1.0", extras = ["postgresql"]}
+invenio-indexer = "<2.2.0"
+invenio-records-rest = "<2.3.0"
+pydocstyle = ">=6.1.1, <6.2.0"
+docker-services-cli = "^0.6.1"
 
 [tool.poetry.dev-dependencies]
-safety = "^1.10.3"
-pytest-invenio = "^1.4.11"
-ipython = "^8.3.0"
-autoflake = "^1.4"
-Sphinx = "^4.5.0"
+safety = ">=1.8"
+ipython = "*"
+autoflake = ">=1.3.1"
+Sphinx = ">=4.5.0"
+pytest-invenio = ">=1.4.11, <3.0.0"
+docker-services-cli = "<=1.0.0"
 
 [tool.poetry.scripts]
 check_license = "rero_invenio_base.cli.utils:check_license"
