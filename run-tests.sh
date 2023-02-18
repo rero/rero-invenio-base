@@ -37,16 +37,13 @@ trap cleanup EXIT
 # Check vulnerabilities:
 #
 # Exception are
-# +============================+===========+==========================+==========+
-# | package                    | installed | affected                 | ID       |
-# +============================+===========+==========================+==========+
-# | sqlalchemy                 | 1.4.46    | <2.0.0b1                 | 51668    |
-# | sqlalchemy-utils           | 0.38.3    | >=0.27.0                 | 42194    |
-# | py                         | 1.11.0    | <=1.11.0                 | 51457    |
-# | safety                     | 1.10.3    | <2.2.0                   | 51358    |
-# | wheel                      | 0.37.1    | <0.38.1                  | 51499    |
-# +==============================================================================+
-safety check -i 51668 -i 42194 -i 51457 -i 51358 -i 51499
+# -> Vulnerability found in sqlalchemy version 1.4.48
+#    Vulnerability ID: 51668
+# -> Vulnerability found in sqlalchemy-utils version 0.38.3
+#    Vulnerability ID: 42194
+# -> Vulnerability found in py version 1.11.0
+#    Vulnerability ID: 51457
+safety check -o bare -i 51668 -i 42194 -i 51457
 
 flask rero utils check_license check_license_config.yml
 pydocstyle rero_ils tests docs
@@ -59,6 +56,7 @@ autoflake -c -r --remove-all-unused-imports --ignore-init-module-imports . &> /d
 python -m sphinx.cmd.build -qnNW docs docs/_build/html
 # Note: for now we do not need this for the tests.
 export DOCKER_SERVICES_FILEPATH=./docker-services.yml
+export ELASTICSEARCH_VERSION=7.10.2
 eval "$(docker-services-cli up --search ${SEARCH:-elasticsearch} --env)"
 python -m pytest
 tests_exit_code=$?

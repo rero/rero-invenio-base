@@ -17,11 +17,20 @@
 
 """Click elasticsearch index command-line utilities."""
 import json
+import sys
+from pprint import pformat
+from time import sleep
 
 import click
 from elasticsearch_dsl import Index
 from invenio_search import current_search, current_search_client
-from invenio_search.cli import es_version_check, with_appcontext
+
+try:
+    from invenio_search.cli import es_version_check
+except ImportError:
+    from invenio_search.cli import search_version_check as es_version_check
+
+from invenio_search.cli import with_appcontext
 from jsonpatch import make_patch
 
 
@@ -95,7 +104,7 @@ def switch_index(old, new):
     for alias in aliases:
         current_search_client.indices.put_alias(new, alias)
         current_search_client.indices.delete_alias(old, alias)
-    click.secho('Sucessfully switched.', fg='green')
+    click.secho('Successfully switched.', fg='green')
 
 
 @index.command('create')
@@ -113,7 +122,7 @@ def create_index(resource, index, verbose, templates):
 
     :param resource: the resource such as documents.
     :param index: the index name such as documents-document-v0.0.1-20211014
-    :param verbose: display addtional message.
+    :param verbose: display additional message.
     :param templates: update also the es templates.
     """
     if templates:
@@ -162,8 +171,130 @@ def update_mapping(aliases, settings):
                     f'error: {excep}', fg='red')
             if res.get('acknowledged'):
                 click.secho(
-                    f'index: {index} has been sucessfully updated',
+                    f'index: {index} has been successfully updated',
                     fg='green')
             else:
                 click.secho(
                     f'error: {res}', fg='red')
+
+
+@index.command('move')
+@with_appcontext
+@es_version_check
+@click.argument('resource')
+@click.argument('old')
+@click.argument('new')
+@click.option('-t', '--templates/--no-templates', 'templates', is_flag=True,
+              default=True)
+@click.option('-v', '--verbose/--no-verbose', 'verbose',
+              is_flag=True, default=False)
+@click.option('-n', '--interval', default=1, type=int,
+              help='seconds to wait between updates')
+def move_index(resource, old, new, templates, verbose, interval):
+    """Move index using the elasticsearch resource.
+
+    :param resource: the resource such as documents.
+    :param old: full name of the old index
+    :param new: full name of the fresh created index
+    :param verbose: display additional message.
+    :param templates: update also the es templates.
+    """
+    # create_index(resource, index, verbose, templates)
+    try:
+        if templates:
+            tbody = current_search_client.indices.get_template()
+            for tmpl in current_search.put_templates():
+                click.secho(f'file:{tmpl[0]}, ok: {tmpl[1]}', fg='green')
+                new_tbody = current_search_client.indices.get_template()
+                if patch := make_patch(new_tbody, tbody):
+                    click.secho('Templates are updated.', fg='green')
+                    if verbose:
+                        click.secho('Diff in templates', fg='green')
+                        click.echo(patch)
+                else:
+                    click.secho('Templates did not changed.', fg='yellow')
+
+        f_mapping = list(current_search.aliases.get(resource).values()).pop()
+        mapping = json.load(open(f'{f_mapping}'))
+        current_search_client.indices.create(new, mapping)
+        click.secho(f'Index {new} has been created.', fg='green')
+    except Exception as err:
+        click.secho(f'ERROR CREATE: {err}', fg='red')
+        sys.exit(1)
+
+    res = current_search_client.reindex(
+        body=dict(
+            source=dict(
+                index=old
+            ),
+            dest=dict(
+                index=new,
+                version_type='external_gte'
+            )
+        ),
+        wait_for_completion=False
+    )
+    task = res["task"]
+    click.secho(f'Task: {task}', fg='green')
+    if interval == 0:
+        return
+    count = 0
+    # wait for task
+    res = current_search_client.tasks.get(task)
+    while not res.get('completed'):
+        task_info = res.get('task')
+        if verbose and task_info:
+            click.secho(
+                f'Watching task: {task} {count} seconds ...', fg='green')
+            click.secho(f'{task_info.get("description")}', fg='green')
+            click.secho(f'{pformat( task_info.get("status"))}', fg='green')
+        sleep(interval)
+        count += interval
+        res = current_search_client.tasks.get(task)
+    if verbose:
+        click.secho(f'Finished task: {task} {count} seconds ...', fg='yellow')
+        click.secho(f'{pformat(res.get("response"))}', fg='yellow')
+    if failures := res.get('failures'):
+        click.secho(f'ERROR REINDEX: {failures}', fg='red')
+        sys.exit(2)
+
+    # switch index
+    try:
+        aliases = current_search_client.indices.get_alias().get(old)\
+            .get('aliases').keys()
+        for alias in aliases:
+            current_search_client.indices.put_alias(new, alias)
+            current_search_client.indices.delete_alias(old, alias)
+        click.secho('Successfully switched.', fg='green')
+    except Exception as err:
+        click.secho(f'ERROR SWITCH: {err}', fg='red')
+        sys.exit(3)
+
+
+@index.command()
+@click.option('-i', '--index', default='',
+              help='all if not specified')
+@click.option('-a', '--aliases', is_flag=True, default=False,
+              help='Display aliases.')
+@click.option('-m', '--mappings', is_flag=True, default=False,
+              help='Display mappings.')
+@click.option('-s', '--settings', is_flag=True, default=False,
+              help='Display settings.')
+@with_appcontext
+def info(index, aliases, mappings, settings):
+    """List indices of given alias."""
+    def print_info(name, data):
+        """Display additional info."""
+        msg = pformat(data.get(name))
+        click.secho(f'{name}:', fg='yellow')
+        click.secho(f'{msg}', fg='yellow')
+
+    indices = current_search_client.indices.get(f'{index}*')
+    for index, data in indices.items():
+        click.secho(f'{index}', fg='green')
+        if aliases:
+            print_info('aliases', data)
+        if mappings:
+            print_info('mappings', data)
+        if settings:
+            print_info('settings', data)
