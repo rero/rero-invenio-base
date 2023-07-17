@@ -29,25 +29,32 @@ set -o nounset
 # Always bring down docker services
 function cleanup() {
     # Note: for now we do not need this for the tests.
-    # eval "$(docker-services-cli down --env)"
-    echo "Done"
+    eval "$(docker-services-cli down --env)"
+    echo "Done: $?"
 }
 trap cleanup EXIT
 
-# Check vulnerabilities:
-#
-# Exception are
-# -> Vulnerability found in sqlalchemy version 1.4.48
+# -> Vulnerability found in sqlalchemy version 1.4.50
 #    Vulnerability ID: 51668
 # -> Vulnerability found in sqlalchemy-utils version 0.38.3
 #    Vulnerability ID: 42194
+# -> Vulnerability found in pip version 22.3.1
+#    Vulnerability ID: 62044
 # -> Vulnerability found in py version 1.11.0
 #    Vulnerability ID: 51457
-safety check -o bare -i 51668 -i 42194 -i 51457
+safety_exceptions="-i 51668 -i 42194 -i 62044 -i 51457"
+msg=$(safety check -o text ${safety_exceptions}) || {
+    echo "Safety vulnerabilites found for packages:" $(safety check -o bare ${safety_exceptions})
+    echo "Run:" "safety check -o screen ${safety_exceptions} | grep -i vulnerability" "for more details"
+    exit 1
+}
 
 flask rero utils check_license check_license_config.yml
+
 pydocstyle rero_ils tests docs
+
 isort --check-only --diff rero_invenio_base tests
+
 autoflake -c -r --remove-all-unused-imports --ignore-init-module-imports . &> /dev/null || {
     autoflake --remove-all-unused-imports -ri --ignore-init-module-imports .
     exit 1

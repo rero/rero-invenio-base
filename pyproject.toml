@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rero-invenio-base"
-version = "0.2.1"
+version = "0.2.2"
 description = "Generic backend libraries for RERO Invenio instances."
 readme = "README.rst"
 authors = ["RERO <software@rero.ch>"]
@@ -12,12 +12,13 @@ PyYAML = "<=7.0"
 jsonpatch = "<=2.0"
 Mako = ">=1.2.2"
 dparse = ">=0.5.2"
-invenio-search = {version = ">=1.4.2,<3.0.0", extras = ["elasticsearch7"]}
-invenio-db = {version = ">=1.0.14,<1.1.0", extras = ["postgresql"]}
-invenio-indexer = "<2.2.0"
+invenio-search = {version = "<3.0.0", extras = ["elasticsearch7"]}
+invenio-db = {version = ">=1.1.0,<1.2.0", extras = ["postgresql"]}
+invenio-indexer = "<3.0.0"
 invenio-records-rest = "<2.3.0"
-pydocstyle = ">=6.1.1, <6.2.0"
+pydocstyle = ">=6.1.1"
 docker-services-cli = "^0.6.1"
+sqlalchemy = ">=1.3.0,<1.5.0"
 
 [tool.poetry.dev-dependencies]
 safety = ">=1.8"
