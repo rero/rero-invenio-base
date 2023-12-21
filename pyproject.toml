@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rero-invenio-base"
-version = "0.2.2"
+version = "0.3.0"
 description = "Generic backend libraries for RERO Invenio instances."
 readme = "README.rst"
 authors = ["RERO <software@rero.ch>"]
