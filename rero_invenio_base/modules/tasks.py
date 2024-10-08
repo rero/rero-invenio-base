@@ -66,7 +66,7 @@ def run_on_worker(code, fname=None, *args, **kwargs):
 
     """
     # compile the code
-    compiled = compile(code, 'code', 'exec')
+    compiled = compile(code, "code", "exec")
     # execute the compiled code
     if not fname:
         return exec(compiled)

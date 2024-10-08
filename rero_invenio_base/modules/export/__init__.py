@@ -20,4 +20,4 @@
 
 from rero_invenio_base.modules.export.proxies import current_export
 
-__all__ = ('current_export',)
+__all__ = ("current_export",)

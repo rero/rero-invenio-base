@@ -31,16 +31,16 @@ class REROInvenioBase(object):
     def init_app(self, app):
         """Flask application initialization."""
         self.init_config(app)
-        app.extensions['rero-invenio-base'] = self
+        app.extensions["rero-invenio-base"] = self
 
     def init_config(self, app):
         """Initialize configuration."""
         # Use theme's base template if theme is installed
-        if 'BASE_TEMPLATE' in app.config:
+        if "BASE_TEMPLATE" in app.config:
             app.config.setdefault(
-                'RERO_INVENIO_BASE_BASE_TEMPLATE',
-                app.config['BASE_TEMPLATE'],
+                "RERO_INVENIO_BASE_BASE_TEMPLATE",
+                app.config["BASE_TEMPLATE"],
             )
         for k in dir(config):
-            if k.startswith('RERO_INVENIO_BASE_'):
+            if k.startswith("RERO_INVENIO_BASE_"):
                 app.config.setdefault(k, getattr(config, k))

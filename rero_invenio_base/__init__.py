@@ -20,4 +20,4 @@
 from .ext import REROInvenioBase
 from .version import __version__
 
-__all__ = ('__version__', 'REROInvenioBase')
+__all__ = ("__version__", "REROInvenioBase")

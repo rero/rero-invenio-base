@@ -27,33 +27,21 @@ from rero_invenio_base.cli.utils import check_json, check_license
 def test_cli_validate(script_info):
     """Test JOSON indentation cli."""
     runner = CliRunner()
-    file_name = join(dirname(__file__), './data/data.json')
+    file_name = join(dirname(__file__), "./data/data.json")
 
-    res = runner.invoke(
-        check_json,
-        [file_name],
-        obj=script_info
-    )
+    res = runner.invoke(check_json, [file_name], obj=script_info)
     assert res.exit_code == 0
 
-    file_name = join(dirname(__file__), './data/data_bad_indentation.json')
+    file_name = join(dirname(__file__), "./data/data_bad_indentation.json")
 
-    res = runner.invoke(
-        check_json,
-        [file_name],
-        obj=script_info
-    )
+    res = runner.invoke(check_json, [file_name], obj=script_info)
     assert res.exit_code == 1
 
 
 def test_cli_licence(script_info):
     """Test check license cli."""
     runner = CliRunner()
-    cfg = join(dirname(__file__), '../check_license_config.yml')
+    cfg = join(dirname(__file__), "../check_license_config.yml")
 
-    res = runner.invoke(
-        check_license,
-        [cfg],
-        obj=script_info
-    )
+    res = runner.invoke(check_license, [cfg], obj=script_info)
     assert res.exit_code == 0

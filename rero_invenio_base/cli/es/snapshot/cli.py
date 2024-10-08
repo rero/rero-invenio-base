@@ -37,105 +37,112 @@ def snapshot():
 snapshot.add_command(repository)
 
 
-@snapshot.command('list')
+@snapshot.command("list")
 @with_appcontext
-@click.option('-n', '--name', help="default=_all", default='_all')
-@click.argument('repository')
+@click.option("-n", "--name", help="default=_all", default="_all")
+@click.argument("repository")
 def list_snapshot(repository, name):
     """List snapshot."""
     try:
         snapshots = current_search_client.snapshot.get(repository, name)
         infos = snapshots
-        if name == '_all':
-            infos = [{
-                    'snapshot': snapshot['snapshot'],
-                    'start_time': snapshot['start_time'],
-                    'duration': snapshot['duration_in_millis'] / 1000,
-                    'shards': snapshot['shards'],
-                    'state': snapshot['state'],
-                    'uuid': snapshot['uuid']
+        if name == "_all":
+            infos = [
+                {
+                    "snapshot": snapshot["snapshot"],
+                    "start_time": snapshot["start_time"],
+                    "duration": snapshot["duration_in_millis"] / 1000,
+                    "shards": snapshot["shards"],
+                    "state": snapshot["state"],
+                    "uuid": snapshot["uuid"],
                 }
-                for snapshot in snapshots['snapshots']
+                for snapshot in snapshots["snapshots"]
             ]
-        click.secho(json.dumps(infos, indent=2), fg='green')
+        click.secho(json.dumps(infos, indent=2), fg="green")
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@snapshot.command('create')
+@snapshot.command("create")
 @with_appcontext
-@click.argument('repository')
-@click.option('-n', '--name', help="default={YYYY.MM.DD_HH:MM:SS}",
-              default=datetime.utcnow().strftime('%Y.%m.%d_%H:%M:%S'))
-@click.option('-w', '--wait', help="wait=True", is_flag=True, default=False)
+@click.argument("repository")
+@click.option(
+    "-n",
+    "--name",
+    help="default={YYYY.MM.DD_HH:MM:SS}",
+    default=datetime.utcnow().strftime("%Y.%m.%d_%H:%M:%S"),
+)
+@click.option("-w", "--wait", help="wait=True", is_flag=True, default=False)
 def create_snapshot(repository, name, wait):
     """Create a new snapshot."""
-    indices = [
-        f'{v}*' for v in current_search.aliases.keys()
-    ] + ['events-stats-record-view*']
+    indices = [f"{v}*" for v in current_search.aliases.keys()] + [
+        "events-stats-record-view*"
+    ]
     try:
         click.secho(
             json.dumps(
                 current_search_client.snapshot.create(
                     repository,
                     name,
-                    body=dict(
-                        indices=','.join(indices),
-                        include_global_state=False
-                    ),
+                    body=dict(indices=",".join(indices), include_global_state=False),
                     wait_for_completion=wait,
-                    master_timeout='5m'
+                    master_timeout="5m",
                 ),
-                indent=2
+                indent=2,
             ),
-            fg='green'
+            fg="green",
         )
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@snapshot.command('delete')
+@snapshot.command("delete")
 @with_appcontext
-@click.argument('repository')
-@click.argument('name')
-@click.option('--yes-i-know', is_flag=True, callback=abort_if_false,
-              expose_value=False,
-              prompt='Do you really want to delete a snapshot?')
+@click.argument("repository")
+@click.argument("name")
+@click.option(
+    "--yes-i-know",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="Do you really want to delete a snapshot?",
+)
 def delete_snapshot(repository, name):
     """Delete a snapshot."""
     try:
         click.secho(
             json.dumps(
-                current_search_client.snapshot.delete(repository, name),
-                indent=2
+                current_search_client.snapshot.delete(repository, name), indent=2
             ),
-            fg='red'
+            fg="red",
         )
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@snapshot.command('restore')
+@snapshot.command("restore")
 @with_appcontext
-@click.argument('repository')
-@click.argument('name')
-@click.option('-w', '--wait', help="wait=True", is_flag=True, default=False)
+@click.argument("repository")
+@click.argument("name")
+@click.option("-w", "--wait", help="wait=True", is_flag=True, default=False)
 def restore_snapshot(repository, name, wait):
     """Restore a snapshot."""
     try:
-        i = Index('_all', using=current_search_client)
-        click.secho('Closing all indices...', fg='')
+        i = Index("_all", using=current_search_client)
+        click.secho("Closing all indices...", fg="")
         i.close()
-        click.secho('All indices are closed.')
-        click.secho(json.dumps(
-            current_search_client.snapshot.restore(
-                repository,
-                name,
-                master_timeout='5m',
-                wait_for_completion=wait
-            ), indent=2), fg='green')
-        click.secho('Opening all indices...')
+        click.secho("All indices are closed.")
+        click.secho(
+            json.dumps(
+                current_search_client.snapshot.restore(
+                    repository, name, master_timeout="5m", wait_for_completion=wait
+                ),
+                indent=2,
+            ),
+            fg="green",
+        )
+        click.secho("Opening all indices...")
         i.open()
-        click.secho('All indices are open.')
+        click.secho("All indices are open.")
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")

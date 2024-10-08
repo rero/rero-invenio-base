@@ -19,4 +19,4 @@
 
 from .cli import slm
 
-__all__ = ('slm')
+__all__ = "slm"

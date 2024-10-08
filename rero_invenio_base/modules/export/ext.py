@@ -31,10 +31,10 @@ class ReroInvenioBaseExportApp:
     def init_app(self, app):
         """Flask application initialization."""
         self.init_config(app)
-        app.extensions['rero_invenio_base_exports'] = self
+        app.extensions["rero_invenio_base_exports"] = self
 
     def init_config(self, app):
         """Initialize configuration."""
         for k in dir(app.config):
-            if k.startswith('RERO_INVENIO_BASE_EXPORT'):
+            if k.startswith("RERO_INVENIO_BASE_EXPORT"):
                 app.config.setdefault(k, getattr(app.config, k))

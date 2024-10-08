@@ -37,4 +37,4 @@ es.add_command(slm)
 es.add_command(snapshot)
 es.add_command(task)
 
-__all__ = ('index')
+__all__ = "index"
