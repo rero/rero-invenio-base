@@ -21,7 +21,6 @@ See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
 
-
 import contextlib
 import copy
 
@@ -36,19 +35,19 @@ from rero_invenio_base import REROInvenioBase
 from rero_invenio_base.modules.export.ext import ReroInvenioBaseExportApp
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def new_index_name1():
     """Fixtures index name."""
-    yield 'records-record-v1.0.0'
+    yield "records-record-v1.0.0"
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def new_index_name2():
     """An other fixture index name."""
-    yield 'records-2'
+    yield "records-2"
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def es_runner(app, es, new_index_name1, new_index_name2):
     """A cli runner that create and remove indexes into es."""
     for i in [new_index_name1, new_index_name2]:
@@ -56,9 +55,9 @@ def es_runner(app, es, new_index_name1, new_index_name2):
             index=i,
             ignore=[400, 404],
         )
-    search = app.extensions['invenio-search']
+    search = app.extensions["invenio-search"]
     with contextlib.suppress(AssertionError):
-        search.register_mappings('records', 'mock_modules.mappings')
+        search.register_mappings("records", "mock_modules.mappings")
     yield CliRunner()
     for i in [new_index_name1, new_index_name2]:
         current_search_client.indices.delete(
@@ -67,7 +66,7 @@ def es_runner(app, es, new_index_name1, new_index_name2):
         )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def celery_config():
     """Override pytest-invenio fixture.
 
@@ -76,19 +75,20 @@ def celery_config():
     return {}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def create_app(instance_path):
     """Application factory fixture."""
+
     def factory(**config):
-        app = Flask('testapp', instance_path=instance_path)
+        app = Flask("testapp", instance_path=instance_path)
         app.config.update(**config)
         app.config.update(
-            RECORDS_REST_ENDPOINTS=copy.deepcopy(
-                _config.RECORDS_REST_ENDPOINTS)
+            RECORDS_REST_ENDPOINTS=copy.deepcopy(_config.RECORDS_REST_ENDPOINTS)
         )
         REROInvenioBase(app)
         ReroInvenioBaseExportApp(app)
         InvenioDB(app)
         InvenioSearch(app)
         return app
+
     return factory

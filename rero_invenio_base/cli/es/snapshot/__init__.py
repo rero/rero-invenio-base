@@ -19,4 +19,4 @@
 
 from .cli import snapshot
 
-__all__ = ('snapshot')
+__all__ = "snapshot"

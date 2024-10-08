@@ -31,50 +31,49 @@ def alias():
     """Elasticsearch alias commands."""
 
 
-@alias.command('get')
+@alias.command("get")
 @with_appcontext
 def get_alias():
     """Get elasticsearch aliases."""
     click.secho(
-        json.dumps(current_search_client.indices.get_alias(), indent=2),
-        fg='green'
+        json.dumps(current_search_client.indices.get_alias(), indent=2), fg="green"
     )
 
 
-@alias.command('put')
+@alias.command("put")
 @with_appcontext
-@click.argument('index')
-@click.argument('name')
+@click.argument("index")
+@click.argument("name")
 def put_alias(index, name):
     """Put elasticsearch alias."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.indices.put_alias(index, name),
-                indent=2
-            ),
-            fg='green'
+            json.dumps(current_search_client.indices.put_alias(index, name), indent=2),
+            fg="green",
         )
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@alias.command('delete')
+@alias.command("delete")
 @with_appcontext
-@click.argument('index')
-@click.argument('name')
-@click.option('--yes-i-know', is_flag=True, callback=abort_if_false,
-              expose_value=False,
-              prompt='Do you really want to delete an alias?')
+@click.argument("index")
+@click.argument("name")
+@click.option(
+    "--yes-i-know",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="Do you really want to delete an alias?",
+)
 def delete_alias(index, name):
     """Delete elasticsearch alias."""
     try:
         click.secho(
             json.dumps(
-                current_search_client.indices.delete_alias(index, name),
-                indent=2
+                current_search_client.indices.delete_alias(index, name), indent=2
             ),
-            fg='green'
+            fg="green",
         )
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")

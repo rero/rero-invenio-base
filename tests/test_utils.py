@@ -22,9 +22,9 @@ from rero_invenio_base.modules.utils import chunk
 
 def test_utils():
     """Test utils functions."""
-    assert list(chunk([1, 2, 3, 4, 5], 2)) == [(1, 2), (3, 4), (5, )]
+    assert list(chunk([1, 2, 3, 4, 5], 2)) == [(1, 2), (3, 4), (5,)]
 
-    assert list(chunk(range(1, 6), 2)) == [(1, 2), (3, 4), (5, )]
+    assert list(chunk(range(1, 6), 2)) == [(1, 2), (3, 4), (5,)]
 
     assert list(chunk(range(120), 50)) == [
         tuple(range(50)),

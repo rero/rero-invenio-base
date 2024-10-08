@@ -34,4 +34,4 @@ def rero():
 rero.add_command(utils)
 rero.add_command(es)
 
-__all__ = ('rero')
+__all__ = "rero"

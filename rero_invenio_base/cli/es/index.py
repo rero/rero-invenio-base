@@ -39,11 +39,11 @@ def index():
     """Elasticsearch index commands."""
 
 
-@index.command('reindex')
+@index.command("reindex")
 @with_appcontext
 @es_version_check
-@click.argument('source')
-@click.argument('destination')
+@click.argument("source")
+@click.argument("destination")
 def reindex(source, destination):
     """Reindex from source.
 
@@ -51,72 +51,65 @@ def reindex(source, destination):
     """
     res = current_search_client.reindex(
         body=dict(
-            source=dict(
-                index=source
-            ),
-            dest=dict(
-                index=destination,
-                version_type='external_gte'
-            )
+            source=dict(index=source),
+            dest=dict(index=destination, version_type="external_gte"),
         ),
-        wait_for_completion=False
+        wait_for_completion=False,
     )
-    click.secho(f'Task: {res["task"]}', fg='green')
+    click.secho(f'Task: {res["task"]}', fg="green")
 
 
-@index.command('open')
+@index.command("open")
 @with_appcontext
-@click.option('-i', '--index', help="default=_all", default='_all')
+@click.option("-i", "--index", help="default=_all", default="_all")
 def open_index(index):
     """Open elasticsearch index."""
     try:
         i = Index(index, using=current_search_client)
-        click.secho(json.dumps(i.open(), indent=2), fg='green')
+        click.secho(json.dumps(i.open(), indent=2), fg="green")
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@index.command('close')
+@index.command("close")
 @with_appcontext
-@click.option('-i', '--index', help="default=_all", default='_all')
+@click.option("-i", "--index", help="default=_all", default="_all")
 def close_index(index):
     """Close elasticsearch index."""
     try:
         i = Index(index, using=current_search_client)
-        click.secho(json.dumps(i.close(), indent=2), fg='green')
+        click.secho(json.dumps(i.close(), indent=2), fg="green")
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
 
 
-@index.command('switch')
+@index.command("switch")
 @with_appcontext
 @es_version_check
-@click.argument('old')
-@click.argument('new')
+@click.argument("old")
+@click.argument("new")
 def switch_index(old, new):
     """Switch index using the elasticsearch aliases.
 
     :param old: full name of the old index
     :param new: full name of the fresh created index
     """
-    aliases = current_search_client.indices.get_alias().get(old)\
-        .get('aliases').keys()
+    aliases = current_search_client.indices.get_alias().get(old).get("aliases").keys()
     for alias in aliases:
         current_search_client.indices.put_alias(new, alias)
         current_search_client.indices.delete_alias(old, alias)
-    click.secho('Successfully switched.', fg='green')
+    click.secho("Successfully switched.", fg="green")
 
 
-@index.command('create')
+@index.command("create")
 @with_appcontext
 @es_version_check
 @click.option(
-    '-t', '--templates/--no-templates', 'templates', is_flag=True,
-    default=True)
-@click.option(
-    '-v', '--verbose/--no-verbose', 'verbose', is_flag=True, default=False)
-@click.argument('resource')
-@click.argument('index')
+    "-t", "--templates/--no-templates", "templates", is_flag=True, default=True
+)
+@click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
+@click.argument("resource")
+@click.argument("index")
 def create_index(resource, index, verbose, templates):
     """Create a new index based on the mapping of a given resource.
 
@@ -128,68 +121,64 @@ def create_index(resource, index, verbose, templates):
     if templates:
         tbody = current_search_client.indices.get_template()
         for tmpl in current_search.put_templates():
-            click.secho(f'file:{tmpl[0]}, ok: {tmpl[1]}', fg='green')
+            click.secho(f"file:{tmpl[0]}, ok: {tmpl[1]}", fg="green")
             new_tbody = current_search_client.indices.get_template()
             if patch := make_patch(new_tbody, tbody):
-                click.secho('Templates are updated.', fg='green')
+                click.secho("Templates are updated.", fg="green")
                 if verbose:
-                    click.secho('Diff in templates', fg='green')
+                    click.secho("Diff in templates", fg="green")
                     click.echo(patch)
             else:
-                click.secho('Templates did not changed.', fg='yellow')
+                click.secho("Templates did not changed.", fg="yellow")
 
     f_mapping = list(current_search.aliases.get(resource).values()).pop()
-    mapping = json.load(open(f'{f_mapping}'))
+    mapping = json.load(open(f"{f_mapping}"))
     current_search_client.indices.create(index, mapping)
-    click.secho(f'Index {index} has been created.', fg='green')
+    click.secho(f"Index {index} has been created.", fg="green")
 
 
 @index.command()
-@click.option('--aliases', '-a', multiple=True, help='all if not specified')
-@click.option(
-    '-s', '--settings/--no-settings', 'settings', is_flag=True, default=False)
+@click.option("--aliases", "-a", multiple=True, help="all if not specified")
+@click.option("-s", "--settings/--no-settings", "settings", is_flag=True, default=False)
 @with_appcontext
 def update_mapping(aliases, settings):
     """Update the mapping of a given alias."""
     if not aliases:
         aliases = current_search.aliases.keys()
     for alias in aliases:
-        for index, f_mapping in iter(
-            current_search.aliases.get(alias).items()
-        ):
+        for index, f_mapping in iter(current_search.aliases.get(alias).items()):
             mapping = json.load(open(f_mapping))
             try:
-                if mapping.get('settings') and settings:
+                if mapping.get("settings") and settings:
                     current_search_client.indices.close(index=index)
                     current_search_client.indices.put_settings(
-                        body=mapping.get('settings'), index=index)
+                        body=mapping.get("settings"), index=index
+                    )
                     current_search_client.indices.open(index=index)
                 res = current_search_client.indices.put_mapping(
-                    body=mapping.get('mappings'), index=index)
+                    body=mapping.get("mappings"), index=index
+                )
             except Exception as excep:
-                click.secho(
-                    f'error: {excep}', fg='red')
-            if res.get('acknowledged'):
-                click.secho(
-                    f'index: {index} has been successfully updated',
-                    fg='green')
+                click.secho(f"error: {excep}", fg="red")
+            if res.get("acknowledged"):
+                click.secho(f"index: {index} has been successfully updated", fg="green")
             else:
-                click.secho(
-                    f'error: {res}', fg='red')
+                click.secho(f"error: {res}", fg="red")
 
 
-@index.command('move')
+@index.command("move")
 @with_appcontext
 @es_version_check
-@click.argument('resource')
-@click.argument('old')
-@click.argument('new')
-@click.option('-t', '--templates/--no-templates', 'templates', is_flag=True,
-              default=True)
-@click.option('-v', '--verbose/--no-verbose', 'verbose',
-              is_flag=True, default=False)
-@click.option('-n', '--interval', default=1, type=int,
-              help='seconds to wait between updates')
+@click.argument("resource")
+@click.argument("old")
+@click.argument("new")
+@click.option(
+    "-t", "--templates/--no-templates", "templates", is_flag=True, default=True
+)
+@click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
+@click.option(
+    "-n", "--interval", default=1, type=int, help="seconds to wait between updates"
+)
 def move_index(resource, old, new, templates, verbose, interval):
     """Move index using the elasticsearch resource.
 
@@ -204,97 +193,88 @@ def move_index(resource, old, new, templates, verbose, interval):
         if templates:
             tbody = current_search_client.indices.get_template()
             for tmpl in current_search.put_templates():
-                click.secho(f'file:{tmpl[0]}, ok: {tmpl[1]}', fg='green')
+                click.secho(f"file:{tmpl[0]}, ok: {tmpl[1]}", fg="green")
                 new_tbody = current_search_client.indices.get_template()
                 if patch := make_patch(new_tbody, tbody):
-                    click.secho('Templates are updated.', fg='green')
+                    click.secho("Templates are updated.", fg="green")
                     if verbose:
-                        click.secho('Diff in templates', fg='green')
+                        click.secho("Diff in templates", fg="green")
                         click.echo(patch)
                 else:
-                    click.secho('Templates did not changed.', fg='yellow')
+                    click.secho("Templates did not changed.", fg="yellow")
 
         f_mapping = list(current_search.aliases.get(resource).values()).pop()
-        mapping = json.load(open(f'{f_mapping}'))
+        mapping = json.load(open(f"{f_mapping}"))
         current_search_client.indices.create(new, mapping)
-        click.secho(f'Index {new} has been created.', fg='green')
+        click.secho(f"Index {new} has been created.", fg="green")
     except Exception as err:
-        click.secho(f'ERROR CREATE: {err}', fg='red')
+        click.secho(f"ERROR CREATE: {err}", fg="red")
         sys.exit(1)
 
     res = current_search_client.reindex(
         body=dict(
-            source=dict(
-                index=old
-            ),
-            dest=dict(
-                index=new,
-                version_type='external_gte'
-            )
+            source=dict(index=old), dest=dict(index=new, version_type="external_gte")
         ),
-        wait_for_completion=False
+        wait_for_completion=False,
     )
     task = res["task"]
-    click.secho(f'Task: {task}', fg='green')
+    click.secho(f"Task: {task}", fg="green")
     if interval == 0:
         return
     count = 0
     # wait for task
     res = current_search_client.tasks.get(task)
-    while not res.get('completed'):
-        task_info = res.get('task')
+    while not res.get("completed"):
+        task_info = res.get("task")
         if verbose and task_info:
-            click.secho(
-                f'Watching task: {task} {count} seconds ...', fg='green')
-            click.secho(f'{task_info.get("description")}', fg='green')
-            click.secho(f'{pformat( task_info.get("status"))}', fg='green')
+            click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
+            click.secho(f'{task_info.get("description")}', fg="green")
+            click.secho(f'{pformat( task_info.get("status"))}', fg="green")
         sleep(interval)
         count += interval
         res = current_search_client.tasks.get(task)
     if verbose:
-        click.secho(f'Finished task: {task} {count} seconds ...', fg='yellow')
-        click.secho(f'{pformat(res.get("response"))}', fg='yellow')
-    if failures := res.get('failures'):
-        click.secho(f'ERROR REINDEX: {failures}', fg='red')
+        click.secho(f"Finished task: {task} {count} seconds ...", fg="yellow")
+        click.secho(f'{pformat(res.get("response"))}', fg="yellow")
+    if failures := res.get("failures"):
+        click.secho(f"ERROR REINDEX: {failures}", fg="red")
         sys.exit(2)
 
     # switch index
     try:
-        aliases = current_search_client.indices.get_alias().get(old)\
-            .get('aliases').keys()
+        aliases = (
+            current_search_client.indices.get_alias().get(old).get("aliases").keys()
+        )
         for alias in aliases:
             current_search_client.indices.put_alias(new, alias)
             current_search_client.indices.delete_alias(old, alias)
-        click.secho('Successfully switched.', fg='green')
+        click.secho("Successfully switched.", fg="green")
     except Exception as err:
-        click.secho(f'ERROR SWITCH: {err}', fg='red')
+        click.secho(f"ERROR SWITCH: {err}", fg="red")
         sys.exit(3)
 
 
 @index.command()
-@click.option('-i', '--index', default='',
-              help='all if not specified')
-@click.option('-a', '--aliases', is_flag=True, default=False,
-              help='Display aliases.')
-@click.option('-m', '--mappings', is_flag=True, default=False,
-              help='Display mappings.')
-@click.option('-s', '--settings', is_flag=True, default=False,
-              help='Display settings.')
+@click.option("-i", "--index", default="", help="all if not specified")
+@click.option("-a", "--aliases", is_flag=True, default=False, help="Display aliases.")
+@click.option("-m", "--mappings", is_flag=True, default=False, help="Display mappings.")
+@click.option("-s", "--settings", is_flag=True, default=False, help="Display settings.")
 @with_appcontext
 def info(index, aliases, mappings, settings):
     """List indices of given alias."""
+
     def print_info(name, data):
         """Display additional info."""
         msg = pformat(data.get(name))
-        click.secho(f'{name}:', fg='yellow')
-        click.secho(f'{msg}', fg='yellow')
+        click.secho(f"{name}:", fg="yellow")
+        click.secho(f"{msg}", fg="yellow")
 
-    indices = current_search_client.indices.get(f'{index}*')
+    indices = current_search_client.indices.get(f"{index}*")
     for index, data in indices.items():
-        click.secho(f'{index}', fg='green')
+        click.secho(f"{index}", fg="green")
         if aliases:
-            print_info('aliases', data)
+            print_info("aliases", data)
         if mappings:
-            print_info('mappings', data)
+            print_info("mappings", data)
         if settings:
-            print_info('settings', data)
+            print_info("settings", data)

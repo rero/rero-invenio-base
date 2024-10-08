@@ -1,0 +1,28 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2020 CERN.
+#
+# Docker-Services-CLI is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.5
+    restart: "unless-stopped"
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - "path.repo=['/opt/elasticsearch/backup']"
+      - xpack.security.enabled=true
+      - xpack.security.authc.anonymous.username=anonymous
+      - xpack.security.authc.anonymous.roles=superuser
+      - xpack.security.authc.anonymous.authz_exception=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 2g
+    ports:
+      - "9200:9200"
+      - "9300:9300"

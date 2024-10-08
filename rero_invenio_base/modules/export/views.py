@@ -40,24 +40,29 @@ def create_blueprint_from_app(app):
     :params app: A Flask application.
     :returns: Configured blueprint.
     """
-    api_blueprint = Blueprint('api_exports', __name__, url_prefix='')
-    endpoints = app.config.get('RERO_INVENIO_BASE_EXPORT_REST_ENDPOINTS', {})
+    api_blueprint = Blueprint("api_exports", __name__, url_prefix="")
+    endpoints = app.config.get("RERO_INVENIO_BASE_EXPORT_REST_ENDPOINTS", {})
     for key, config in endpoints.items():
         copy_config = deepcopy(config)
-        resource_config = copy_config.pop('resource', {})
+        resource_config = copy_config.pop("resource", {})
         route_config = {**resource_config, **copy_config}  # merging dict
         rule = create_export_url_route(key, **route_config)
         api_blueprint.add_url_rule(**rule)
     return api_blueprint
 
 
-def create_export_url_route(endpoint, default_media_type=None,
-                            list_permission_factory_imp=None,
-                            list_route=None, pid_fetcher=None,
-                            search_class=None,
-                            search_factory_imp=None,
-                            search_serializers=None,
-                            search_serializers_aliases=None, **kwargs):
+def create_export_url_route(
+    endpoint,
+    default_media_type=None,
+    list_permission_factory_imp=None,
+    list_route=None,
+    pid_fetcher=None,
+    search_class=None,
+    search_factory_imp=None,
+    search_serializers=None,
+    search_serializers_aliases=None,
+    **kwargs,
+):
     """Create Werkzeug URL rule for resource streamed export.
 
     :param kwargs: all argument necessary to build the flask endpoint.
@@ -72,8 +77,8 @@ def create_export_url_route(endpoint, default_media_type=None,
     #   NOTE: Using REST guidelines it should be best to build the path using
     #     "export" as url suffix ; but it can't be done here because this url
     #     is already used for record serialization.
-    view_name = f'{endpoint}_export'
-    list_route = f'/export{list_route}'
+    view_name = f"{endpoint}_export"
+    list_route = f"/export{list_route}"
 
     # ACCESS PERMISSIONS
     #   Permission to access to any export route are the same as list resource
@@ -91,43 +96,48 @@ def create_export_url_route(endpoint, default_media_type=None,
         search_serializers=search_serializers,
         serializers_query_aliases=search_serializers_aliases,
         search_factory=obj_or_import_string(
-            search_factory_imp, default=es_search_factory)
+            search_factory_imp, default=es_search_factory
+        ),
     )
-    return {'rule': list_route, 'view_func': export_view}
+    return {"rule": list_route, "view_func": export_view}
 
 
 class ExportResource(ContentNegotiatedMethodView):
     """Resource for records streamed exports."""
 
-    def __init__(self, default_media_type=None, permission_factory=None,
-                 pid_fetcher=None, search_class=None, search_factory=None,
-                 search_serializers=None, serializers_query_aliases=None,
-                 **kwargs):
+    def __init__(
+        self,
+        default_media_type=None,
+        permission_factory=None,
+        pid_fetcher=None,
+        search_class=None,
+        search_factory=None,
+        search_serializers=None,
+        serializers_query_aliases=None,
+        **kwargs,
+    ):
         """Init magic method."""
         serializers = {
             mime: obj_or_import_string(search_obj)
             for mime, search_obj in search_serializers.items() or {}.items()
         }
         super().__init__(
-            method_serializers={'GET': serializers},
+            method_serializers={"GET": serializers},
             serializers_query_aliases=serializers_query_aliases,
-            default_method_media_type={'GET': default_media_type},
+            default_method_media_type={"GET": default_media_type},
             default_media_type=default_media_type,
-            **kwargs
+            **kwargs,
         )
         self.permission_factory = permission_factory
         self.pid_fetcher = current_pidstore.fetchers[pid_fetcher]
         self.search_class = search_class
         self.search_factory = partial(search_factory, self)
 
-    @need_record_permission('permission_factory')
+    @need_record_permission("permission_factory")
     def get(self, **kwargs):
         """Implements GET /export/{resource_list_name}."""
         search_obj = self.search_class()
         search = search_obj.with_preference_param().params(version=True)
         search, _ = self.search_factory(search)
 
-        return self.make_response(
-            pid_fetcher=None,
-            search_result=search.scan()
-        )
+        return self.make_response(pid_fetcher=None, search_result=search.scan())

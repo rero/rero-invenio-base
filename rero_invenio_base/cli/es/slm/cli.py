@@ -39,14 +39,13 @@ def stats():
     """Lifecycle stats."""
     try:
         click.secho(
-            json.dumps(current_search_client.slm.get_stats(), indent=2),
-            fg='green'
+            json.dumps(current_search_client.slm.get_stats(), indent=2), fg="green"
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         sys.exit(1)
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         sys.exit(1)
 
 
@@ -56,14 +55,13 @@ def status():
     """Lifecycle status."""
     try:
         click.secho(
-            json.dumps(current_search_client.slm.get_status(), indent=2),
-            fg='green'
+            json.dumps(current_search_client.slm.get_status(), indent=2), fg="green"
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         sys.exit(1)
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         sys.exit(1)
 
 
@@ -72,122 +70,116 @@ def status():
 def start():
     """Start lifecycle."""
     try:
-        click.secho(
-            json.dumps(current_search_client.slm.start(), indent=2),
-            fg='green'
-        )
+        click.secho(json.dumps(current_search_client.slm.start(), indent=2), fg="green")
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
 
 
 @slm.command()
 @with_appcontext
-@click.option('--yes-i-know', is_flag=True, callback=abort_if_false,
-              expose_value=False,
-              prompt='Do you really want to stop the lifecycle?')
+@click.option(
+    "--yes-i-know",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="Do you really want to stop the lifecycle?",
+)
 def stop():
     """Stop lifecycle."""
     try:
-        click.secho(
-            json.dumps(current_search_client.slm.stop(), indent=2),
-            fg='red'
-        )
+        click.secho(json.dumps(current_search_client.slm.stop(), indent=2), fg="red")
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
 
 
 @slm.command()
 @with_appcontext
-@click.argument('policy_id')
-@click.option('--yes-i-know', is_flag=True, callback=abort_if_false,
-              expose_value=False,
-              prompt='Do you really want to delete a lifecycle?')
+@click.argument("policy_id")
+@click.option(
+    "--yes-i-know",
+    is_flag=True,
+    callback=abort_if_false,
+    expose_value=False,
+    prompt="Do you really want to delete a lifecycle?",
+)
 def delete(policy_id):
     """Delete lifecycle."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.slm.delete_lifecycle(policy_id),
-                indent=2
-            ),
-            fg='red'
+            json.dumps(current_search_client.slm.delete_lifecycle(policy_id), indent=2),
+            fg="red",
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
 
 
 @slm.command()
 @with_appcontext
-@click.argument('policy_id')
+@click.argument("policy_id")
 def execute(policy_id):
     """Execute lifecycle."""
     try:
         click.secho(
             json.dumps(
-                current_search_client.slm.execute_lifecycle(policy_id),
-                indent=2
+                current_search_client.slm.execute_lifecycle(policy_id), indent=2
             ),
-            fg='green'
+            fg="green",
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
 
 
 @slm.command()
 @with_appcontext
-@click.option('-n', '--name', help="default=all", default=None)
+@click.option("-n", "--name", help="default=all", default=None)
 def get(name):
     """Get lifecycle."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.slm.get_lifecycle(name),
-                indent=2
-            ),
-            fg='green'
+            json.dumps(current_search_client.slm.get_lifecycle(name), indent=2),
+            fg="green",
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
 
 
 @slm.command()
 @with_appcontext
-@click.argument('policy_id')
-@click.argument('body_file', type=click.File('r'))
+@click.argument("policy_id")
+@click.argument("body_file", type=click.File("r"))
 def put(policy_id, body_file):
     """Put lifecycle."""
     try:
         body = json.load(body_file)
         click.secho(
             json.dumps(
-                current_search_client.slm.put_lifecycle(policy_id, body),
-                indent=2
+                current_search_client.slm.put_lifecycle(policy_id, body), indent=2
             ),
-            fg='green'
+            fg="green",
         )
     except TransportError as err:
-        click.secho(f'SLM NOT ENABLED: {err}', fg='red')
+        click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         click.Abort
     except Exception as err:
-        click.secho(str(err), fg='red')
+        click.secho(str(err), fg="red")
         click.Abort
