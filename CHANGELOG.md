@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.3.1](https://github.com/rero/rero-invenio-base/tree/v0.3.0) (2025-04-16)
+
+[Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.0...v0.3.1)
+
+**Changes:**
+
+* dependencies: fix vulnerabilities [\#18](https://github.com/rero/rero-invenio-base/pull/18) (by @rerowep)
+* dependencies: remove restrictive dependencies [\#17](https://github.com/rero/rero-invenio-base/pull/17) (by @rerowep)
+
 ## [v0.3.0](https://github.com/rero/rero-invenio-base/tree/v0.3.0) (2023-12-21)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.2.1...v0.3.0)
