@@ -41,3 +41,7 @@ jobs:
       - name: Run tests
         run: |
           poetry run ./scripts/test
+
+      - name: Test publish in dry run mode
+        run: |
+          poetry publish --build --dry-run
