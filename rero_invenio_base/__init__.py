@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -20,4 +18,4 @@
 from .ext import REROInvenioBase
 from .version import __version__
 
-__all__ = ("__version__", "REROInvenioBase")
+__all__ = ("REROInvenioBase", "__version__")

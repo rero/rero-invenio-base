@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -18,7 +16,7 @@
 """Click elasticsearch snapshot command-line utilities."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 import click
 from elasticsearch_dsl import Index
@@ -70,21 +68,19 @@ def list_snapshot(repository, name):
     "-n",
     "--name",
     help="default={YYYY.MM.DD_HH:MM:SS}",
-    default=datetime.utcnow().strftime("%Y.%m.%d_%H:%M:%S"),
+    default=datetime.now(timezone.utc).strftime("%Y.%m.%d_%H:%M:%S"),
 )
 @click.option("-w", "--wait", help="wait=True", is_flag=True, default=False)
 def create_snapshot(repository, name, wait):
     """Create a new snapshot."""
-    indices = [f"{v}*" for v in current_search.aliases.keys()] + [
-        "events-stats-record-view*"
-    ]
+    indices = [f"{v}*" for v in current_search.aliases] + ["events-stats-record-view*"]
     try:
         click.secho(
             json.dumps(
                 current_search_client.snapshot.create(
                     repository,
                     name,
-                    body=dict(indices=",".join(indices), include_global_state=False),
+                    body={"indices": ",".join(indices), "include_global_state": False},
                     wait_for_completion=wait,
                     master_timeout="5m",
                 ),
@@ -111,9 +107,7 @@ def delete_snapshot(repository, name):
     """Delete a snapshot."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.snapshot.delete(repository, name), indent=2
-            ),
+            json.dumps(current_search_client.snapshot.delete(repository, name), indent=2),
             fg="red",
         )
     except Exception as err:
@@ -134,9 +128,7 @@ def restore_snapshot(repository, name, wait):
         click.secho("All indices are closed.")
         click.secho(
             json.dumps(
-                current_search_client.snapshot.restore(
-                    repository, name, master_timeout="5m", wait_for_completion=wait
-                ),
+                current_search_client.snapshot.restore(repository, name, master_timeout="5m", wait_for_completion=wait),
                 indent=2,
             ),
             fg="green",

@@ -18,8 +18,8 @@
  RERO Invenio Base
 ===================
 
-.. image:: https://github.com/rero/rero-invenio-base/workflows/CI/badge.svg
-        :target: https://github.com/rero/rero-invenio-base/actions?query=workflow%3ACI
+.. image:: https://github.com/rero/rero-invenio-base/actions/workflows/continuous-integration-test.yml/badge.svg
+        :target: https://github.com/rero/rero-invenio-base/actions/workflows/continuous-integration-test.yml
 
 .. image:: https://img.shields.io/github/tag/rero/rero-invenio-base.svg
         :target: https://github.com/rero/rero-invenio-base/releases

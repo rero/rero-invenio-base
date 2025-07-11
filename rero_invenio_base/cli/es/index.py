@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -16,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Click elasticsearch index command-line utilities."""
+
 import json
 import sys
 from pprint import pformat
@@ -47,16 +46,16 @@ def index():
 def reindex(source, destination):
     """Reindex from source.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-reindex.html # noqa
+    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-reindex.html
     """
     res = current_search_client.reindex(
-        body=dict(
-            source=dict(index=source),
-            dest=dict(index=destination, version_type="external_gte"),
-        ),
+        body={
+            "source": {"index": source},
+            "dest": {"index": destination, "version_type": "external_gte"},
+        },
         wait_for_completion=False,
     )
-    click.secho(f'Task: {res["task"]}', fg="green")
+    click.secho(f"Task: {res['task']}", fg="green")
 
 
 @index.command("open")
@@ -104,9 +103,7 @@ def switch_index(old, new):
 @index.command("create")
 @with_appcontext
 @es_version_check
-@click.option(
-    "-t", "--templates/--no-templates", "templates", is_flag=True, default=True
-)
+@click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
 @click.argument("resource")
 @click.argument("index")
@@ -132,8 +129,8 @@ def create_index(resource, index, verbose, templates):
                 click.secho("Templates did not changed.", fg="yellow")
 
     f_mapping = list(current_search.aliases.get(resource).values()).pop()
-    mapping = json.load(open(f"{f_mapping}"))
-    current_search_client.indices.create(index, mapping)
+    with open(f_mapping) as mapping:
+        current_search_client.indices.create(index, json.load(mapping))
     click.secho(f"Index {index} has been created.", fg="green")
 
 
@@ -147,17 +144,14 @@ def update_mapping(aliases, settings):
         aliases = current_search.aliases.keys()
     for alias in aliases:
         for index, f_mapping in iter(current_search.aliases.get(alias).items()):
-            mapping = json.load(open(f_mapping))
+            with open(f_mapping) as mapping:
+                mapping = json.load(mapping)
             try:
                 if mapping.get("settings") and settings:
                     current_search_client.indices.close(index=index)
-                    current_search_client.indices.put_settings(
-                        body=mapping.get("settings"), index=index
-                    )
+                    current_search_client.indices.put_settings(body=mapping.get("settings"), index=index)
                     current_search_client.indices.open(index=index)
-                res = current_search_client.indices.put_mapping(
-                    body=mapping.get("mappings"), index=index
-                )
+                res = current_search_client.indices.put_mapping(body=mapping.get("mappings"), index=index)
             except Exception as excep:
                 click.secho(f"error: {excep}", fg="red")
             if res.get("acknowledged"):
@@ -172,13 +166,9 @@ def update_mapping(aliases, settings):
 @click.argument("resource")
 @click.argument("old")
 @click.argument("new")
-@click.option(
-    "-t", "--templates/--no-templates", "templates", is_flag=True, default=True
-)
+@click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
-@click.option(
-    "-n", "--interval", default=1, type=int, help="seconds to wait between updates"
-)
+@click.option("-n", "--interval", default=1, type=int, help="seconds to wait between updates")
 def move_index(resource, old, new, templates, verbose, interval):
     """Move index using the elasticsearch resource.
 
@@ -204,7 +194,8 @@ def move_index(resource, old, new, templates, verbose, interval):
                     click.secho("Templates did not changed.", fg="yellow")
 
         f_mapping = list(current_search.aliases.get(resource).values()).pop()
-        mapping = json.load(open(f"{f_mapping}"))
+        with open(f_mapping) as mapping:
+            mapping = json.load(mapping)
         current_search_client.indices.create(new, mapping)
         click.secho(f"Index {new} has been created.", fg="green")
     except Exception as err:
@@ -212,9 +203,10 @@ def move_index(resource, old, new, templates, verbose, interval):
         sys.exit(1)
 
     res = current_search_client.reindex(
-        body=dict(
-            source=dict(index=old), dest=dict(index=new, version_type="external_gte")
-        ),
+        body={
+            "source": {"index": old},
+            "dest": {"index": new, "version_type": "external_gte"},
+        },
         wait_for_completion=False,
     )
     task = res["task"]
@@ -228,23 +220,21 @@ def move_index(resource, old, new, templates, verbose, interval):
         task_info = res.get("task")
         if verbose and task_info:
             click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
-            click.secho(f'{task_info.get("description")}', fg="green")
-            click.secho(f'{pformat( task_info.get("status"))}', fg="green")
+            click.secho(f"{task_info.get('description')}", fg="green")
+            click.secho(f"{pformat(task_info.get('status'))}", fg="green")
         sleep(interval)
         count += interval
         res = current_search_client.tasks.get(task)
     if verbose:
         click.secho(f"Finished task: {task} {count} seconds ...", fg="yellow")
-        click.secho(f'{pformat(res.get("response"))}', fg="yellow")
+        click.secho(f"{pformat(res.get('response'))}", fg="yellow")
     if failures := res.get("failures"):
         click.secho(f"ERROR REINDEX: {failures}", fg="red")
         sys.exit(2)
 
     # switch index
     try:
-        aliases = (
-            current_search_client.indices.get_alias().get(old).get("aliases").keys()
-        )
+        aliases = current_search_client.indices.get_alias().get(old).get("aliases").keys()
         for alias in aliases:
             current_search_client.indices.put_alias(new, alias)
             current_search_client.indices.delete_alias(old, alias)
