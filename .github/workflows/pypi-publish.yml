@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# RERO-Invenio-Base
+# RERO Invenio Base
 # Copyright (C) 2025 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,29 +13,31 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 name: Publish
 
 on:
-  push:
-    tags:
-      - v*
+  release:
+    types: ["published"]
 
 jobs:
-  build-n-publish:
+  run:
+    name: "Build and publish release"
     runs-on: ubuntu-latest
-    environment: pypi
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: 3.12
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Set up Python
+        run: uv python install 3.12
 
-      - name: poetry-publish
-        run: |
-          poetry publish --build -u __token__ -p ${{ secrets.PYPI_TOKEN }}
+      - name: Build
+        run: uv build
+
+      - name: Publish
+        run: uv publish -t ${{ secrets.PYPI_TOKEN }}

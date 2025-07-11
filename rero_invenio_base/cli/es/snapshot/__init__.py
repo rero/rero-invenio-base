@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -19,4 +17,4 @@
 
 from .cli import snapshot
 
-__all__ = "snapshot"
+__all__ = ["snapshot"]

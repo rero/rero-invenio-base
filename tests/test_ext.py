@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 # Copyright (C) 2022 UCLouvain.
@@ -19,8 +17,6 @@
 
 """Extension initialization tests."""
 
-from __future__ import absolute_import, print_function
-
 from flask import Flask
 
 from rero_invenio_base.modules.export.ext import ReroInvenioBaseExportApp
@@ -38,7 +34,6 @@ def test_init():
 
 def test_blueprints(app):
     """Test blueprints."""
-
     rest_endpoints = app.config.get("RECORDS_REST_ENDPOINTS")
     app.config["RERO_INVENIO_BASE_EXPORT_REST_ENDPOINTS"] = dict(
         record=dict(

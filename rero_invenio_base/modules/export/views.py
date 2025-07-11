@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 # Copyright (C) 2022 UCLouvain.
@@ -17,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """RERO Invenio Base exports views."""
+
 from copy import deepcopy
 from functools import partial
 
@@ -135,7 +134,7 @@ class ExportResource(ContentNegotiatedMethodView):
 
     @need_record_permission("permission_factory")
     def get(self, **kwargs):
-        """Implements GET /export/{resource_list_name}."""
+        """Implement GET /export/{resource_list_name}."""
         search_obj = self.search_class()
         search = search_obj.with_preference_param().params(version=True)
         search, _ = self.search_factory(search)

@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
-# Copyright (C) 2022 RERO.
+# Copyright (C) 2025 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +18,7 @@
 import difflib
 import json
 import os
+import re
 import sys
 from collections import OrderedDict
 from glob import glob
@@ -73,7 +72,7 @@ def check_json(paths, replace, indent, sort_keys, verbose):
         error_cnt = 0
         try:
             fname = path_file
-            with open(fname, "r") as opened_file:
+            with open(fname) as opened_file:
                 json_orig = opened_file.read().rstrip()
                 opened_file.seek(0)
                 json_file = json.load(opened_file, object_pairs_hook=OrderedDict)
@@ -165,7 +164,7 @@ def check_license(configfile, verbose, progress):
         if progress:
             click.secho("License test: ", fg="green", nl=False)
             click.echo(file_name)
-        with open(file_name, "r") as file:
+        with open(file_name) as file:
             result = test_license(
                 file=file,
                 extension=extensions[extension],
