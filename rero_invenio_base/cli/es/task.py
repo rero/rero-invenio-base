@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2023 RERO.
 #
@@ -16,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Click elasticsearch tasks command-line utilities."""
+
 import sys
 from pprint import pformat
 from time import sleep
@@ -59,8 +58,8 @@ def task_get(task):
         if info := res.get("response"):
             click.secho(f"{pformat(info)}", fg="green")
         elif info := res.get("task"):
-            click.secho(f'{info.get("description")}', fg="yellow")
-            click.secho(f'{pformat(info.get("status"))}', fg="yellow")
+            click.secho(f"{info.get('description')}", fg="yellow")
+            click.secho(f"{pformat(info.get('status'))}", fg="yellow")
         else:
             click.secho(f"{pformat(res)}", fg="blue")
     except Exception as err:
@@ -120,14 +119,14 @@ def task_watch(task, interval):
         while not res.get("completed"):
             if info := res.get("task"):
                 click.secho(f"Watching task: {task} {seconds} seconds ...", fg="green")
-                click.secho(f'{info.get("description")}', fg="yellow")
-                click.secho(f'{pformat(info.get("status"))}', fg="yellow")
+                click.secho(f"{info.get('description')}", fg="yellow")
+                click.secho(f"{pformat(info.get('status'))}", fg="yellow")
             sleep(interval)
             seconds += interval
             res = current_search_client.tasks.get(task)
 
         click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
-        click.secho(f'{pformat(res.get("response"))}', fg="green")
+        click.secho(f"{pformat(res.get('response'))}", fg="green")
     except Exception as err:
         click.secho(f"Error: {err}", fg="red")
         sys.exit(1)

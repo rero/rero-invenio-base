@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -20,7 +18,7 @@
 from . import config
 
 
-class REROInvenioBase(object):
+class REROInvenioBase:
     """RERO Invenio Base extension."""
 
     def __init__(self, app=None):

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -16,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Click elasticsearch index command-line utilities."""
+
 import json
 import sys
 from pprint import pformat
@@ -56,7 +55,7 @@ def reindex(source, destination):
         ),
         wait_for_completion=False,
     )
-    click.secho(f'Task: {res["task"]}', fg="green")
+    click.secho(f"Task: {res['task']}", fg="green")
 
 
 @index.command("open")
@@ -228,14 +227,14 @@ def move_index(resource, old, new, templates, verbose, interval):
         task_info = res.get("task")
         if verbose and task_info:
             click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
-            click.secho(f'{task_info.get("description")}', fg="green")
-            click.secho(f'{pformat( task_info.get("status"))}', fg="green")
+            click.secho(f"{task_info.get('description')}", fg="green")
+            click.secho(f"{pformat(task_info.get('status'))}", fg="green")
         sleep(interval)
         count += interval
         res = current_search_client.tasks.get(task)
     if verbose:
         click.secho(f"Finished task: {task} {count} seconds ...", fg="yellow")
-        click.secho(f'{pformat(res.get("response"))}', fg="yellow")
+        click.secho(f"{pformat(res.get('response'))}", fg="yellow")
     if failures := res.get("failures"):
         click.secho(f"ERROR REINDEX: {failures}", fg="red")
         sys.exit(2)

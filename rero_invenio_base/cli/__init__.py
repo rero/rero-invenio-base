@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -16,9 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Click command-line utilities."""
-
-
-from __future__ import absolute_import, print_function
 
 import click
 

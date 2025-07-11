@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -16,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Test cli elasticsearch commands."""
-
 
 from rero_invenio_base.cli.es.alias import delete_alias, get_alias, put_alias
 from rero_invenio_base.cli.es.index import (
@@ -43,7 +40,6 @@ def test_cli_es_index_alias(
     script_info, app, es_runner, new_index_name1, new_index_name2
 ):
     """Test index and aliases command line interface."""
-
     runner = es_runner
 
     res = runner.invoke(create_index, ["records", new_index_name1], obj=script_info)
