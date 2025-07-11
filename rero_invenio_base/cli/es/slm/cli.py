@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -38,9 +36,7 @@ def slm():
 def stats():
     """Lifecycle stats."""
     try:
-        click.secho(
-            json.dumps(current_search_client.slm.get_stats(), indent=2), fg="green"
-        )
+        click.secho(json.dumps(current_search_client.slm.get_stats(), indent=2), fg="green")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         sys.exit(1)
@@ -54,9 +50,7 @@ def stats():
 def status():
     """Lifecycle status."""
     try:
-        click.secho(
-            json.dumps(current_search_client.slm.get_status(), indent=2), fg="green"
-        )
+        click.secho(json.dumps(current_search_client.slm.get_status(), indent=2), fg="green")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
         sys.exit(1)
@@ -132,9 +126,7 @@ def execute(policy_id):
     """Execute lifecycle."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.slm.execute_lifecycle(policy_id), indent=2
-            ),
+            json.dumps(current_search_client.slm.execute_lifecycle(policy_id), indent=2),
             fg="green",
         )
     except TransportError as err:
@@ -172,9 +164,7 @@ def put(policy_id, body_file):
     try:
         body = json.load(body_file)
         click.secho(
-            json.dumps(
-                current_search_client.slm.put_lifecycle(policy_id, body), indent=2
-            ),
+            json.dumps(current_search_client.slm.put_lifecycle(policy_id, body), indent=2),
             fg="green",
         )
     except TransportError as err:

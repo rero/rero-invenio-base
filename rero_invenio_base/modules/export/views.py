@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 # Copyright (C) 2022 UCLouvain.
@@ -17,6 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """RERO Invenio Base exports views."""
+
 from copy import deepcopy
 from functools import partial
 
@@ -95,9 +94,7 @@ def create_export_url_route(
         search_class=search_class,
         search_serializers=search_serializers,
         serializers_query_aliases=search_serializers_aliases,
-        search_factory=obj_or_import_string(
-            search_factory_imp, default=es_search_factory
-        ),
+        search_factory=obj_or_import_string(search_factory_imp, default=es_search_factory),
     )
     return {"rule": list_route, "view_func": export_view}
 
@@ -118,8 +115,7 @@ class ExportResource(ContentNegotiatedMethodView):
     ):
         """Init magic method."""
         serializers = {
-            mime: obj_or_import_string(search_obj)
-            for mime, search_obj in search_serializers.items() or {}.items()
+            mime: obj_or_import_string(search_obj) for mime, search_obj in search_serializers.items() or {}.items()
         }
         super().__init__(
             method_serializers={"GET": serializers},
@@ -135,7 +131,7 @@ class ExportResource(ContentNegotiatedMethodView):
 
     @need_record_permission("permission_factory")
     def get(self, **kwargs):
-        """Implements GET /export/{resource_list_name}."""
+        """Implement GET /export/{resource_list_name}."""
         search_obj = self.search_class()
         search = search_obj.with_preference_param().params(version=True)
         search, _ = self.search_factory(search)

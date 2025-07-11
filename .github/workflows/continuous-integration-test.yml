@@ -13,31 +13,36 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-name: Publish
-
-on:
-  release:
-    types: ["published"]
+name: CI
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  run:
-    name: "Build and publish release"
+  test:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        dependencies: ["dev", "deploy"]
     steps:
-      - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
+    - uses: actions/checkout@v4
 
-      - name: Set up Python
-        run: uv python install 3.12
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        cache-dependency-glob: uv.lock
 
-      - name: Build
-        run: uv build
+    - name: Set up Python
+      run: uv python install ${{ matrix.python-version }}
 
-      - name: Publish
-        run: uv publish -t ${{ secrets.PYPI_TOKEN }}
+    - name: Update and install dependencies
+      if: ${{ matrix.dependencies == 'dev' }}
+      run: uv sync --upgrade
+
+    - name: Install locked dependencies
+      if: ${{ matrix.dependencies == 'deploy' }}
+      run: uv sync --frozen
+
+    - name: Run tests
+      run: uv run poe run_tests

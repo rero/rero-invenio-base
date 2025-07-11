@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
-# Copyright (C) 2022 RERO.
+# Copyright (C) 2025 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +18,7 @@
 import difflib
 import json
 import os
+import re
 import sys
 from collections import OrderedDict
 from glob import glob
@@ -51,9 +50,7 @@ def utils():
     default=False,
     help="order keys during replacement default=False",
 )
-@click.option(
-    "-i", "--indent", "indent", type=click.INT, default=2, help="indent default=2"
-)
+@click.option("-i", "--indent", "indent", type=click.INT, default=2, help="indent default=2")
 @click.option("-v", "--verbose", "verbose", is_flag=True, default=False)
 def check_json(paths, replace, indent, sort_keys, verbose):
     """Check json files."""
@@ -63,9 +60,7 @@ def check_json(paths, replace, indent, sort_keys, verbose):
         if os.path.isfile(path):
             files_list.append(path)
         elif os.path.isdir(path):
-            files_list = files_list + glob(
-                os.path.join(path, "**/*.json"), recursive=True
-            )
+            files_list = files_list + glob(os.path.join(path, "**/*.json"), recursive=True)
     if not paths:
         files_list = glob("**/*.json", recursive=True)
     tot_error_cnt = 0
@@ -73,7 +68,7 @@ def check_json(paths, replace, indent, sort_keys, verbose):
         error_cnt = 0
         try:
             fname = path_file
-            with open(fname, "r") as opened_file:
+            with open(fname) as opened_file:
                 json_orig = opened_file.read().rstrip()
                 opened_file.seek(0)
                 json_file = json.load(opened_file, object_pairs_hook=OrderedDict)
@@ -82,9 +77,7 @@ def check_json(paths, replace, indent, sort_keys, verbose):
                 error_cnt = 1
             if replace:
                 with open(fname, "w") as opened_file:
-                    opened_file.write(
-                        json.dumps(json_file, indent=indent, sort_keys=sort_keys)
-                    )
+                    opened_file.write(json.dumps(json_file, indent=indent, sort_keys=sort_keys))
                 click.echo(f"{fname}: ", nl=False)
                 click.secho("File replaced", fg="yellow")
             elif error_cnt == 0 and verbose:
@@ -120,9 +113,7 @@ def check_license(configfile, verbose, progress):
                 files_list.append(path)
             elif os.path.isdir(path):
                 for extension in extensions:
-                    files_list += glob(
-                        os.path.join(path, f"**/*.{extension}"), recursive=recursive
-                    )
+                    files_list += glob(os.path.join(path, f"**/*.{extension}"), recursive=recursive)
         return files_list
 
     def delete_prefix(prefix, line):
@@ -133,9 +124,7 @@ def check_license(configfile, verbose, progress):
 
     def is_copyright(line):
         """Line is copyright."""
-        if line.startswith("Copyright (C)"):
-            return True
-        return False
+        return bool(line.startswith("Copyright (C)"))
 
     def get_line(lines, index, prefix):
         """Get line on index."""
@@ -144,9 +133,7 @@ def check_license(configfile, verbose, progress):
 
     def show_diff(linenbr, text, n_text):
         """Show string diffs."""
-        seqm = difflib.SequenceMatcher(
-            None, text.replace(" ", "◼︎"), n_text.replace(" ", "◼︎")
-        )
+        seqm = difflib.SequenceMatcher(None, text.replace(" ", "◼︎"), n_text.replace(" ", "◼︎"))
         click.echo(f"{linenbr}: ", nl=False)
         for opcode, a0, a1, b0, b1 in seqm.get_opcodes():
             if opcode == "equal":
@@ -165,7 +152,7 @@ def check_license(configfile, verbose, progress):
         if progress:
             click.secho("License test: ", fg="green", nl=False)
             click.echo(file_name)
-        with open(file_name, "r") as file:
+        with open(file_name) as file:
             result = test_license(
                 file=file,
                 extension=extensions[extension],
@@ -181,9 +168,7 @@ def check_license(configfile, verbose, progress):
 
     def is_slash_directive(file, line):
         is_js_file = file.name.split(".")[-1] == "js"
-        if is_js_file and re.search(triple_slash, line):
-            return True
-        return False
+        return bool(is_js_file and re.search(triple_slash, line))
 
     def test_license(file, extension, license_lines, verbose):
         """Test the license in file."""
@@ -195,9 +180,7 @@ def check_license(configfile, verbose, progress):
         line, linenbr = get_line(lines, linenbr, prefix)
         # Get over Shebang lines o Triple-Slash Directives (for Javascript
         # files)
-        while lines[linenbr - 1].startswith("#!") or is_slash_directive(
-            file, lines[linenbr - 1]
-        ):
+        while lines[linenbr - 1].startswith("#!") or is_slash_directive(file, lines[linenbr - 1]):
             # get over Shebang
             line, linenbr = get_line(lines, linenbr, prefix)
         if extension.get("top") and line not in extension.get("top"):
@@ -230,13 +213,9 @@ def check_license(configfile, verbose, progress):
         for ext in file_extension.split(","):
             extensions.setdefault(ext.strip(), file_extensions[file_extension])
     # create recursive file list
-    files_list = get_files(
-        paths=config["directories"]["recursive"], extensions=extensions, recursive=True
-    )
+    files_list = get_files(paths=config["directories"]["recursive"], extensions=extensions, recursive=True)
     # add flat file list
-    files_list += get_files(
-        paths=config["directories"]["flat"], extensions=extensions, recursive=False
-    )
+    files_list += get_files(paths=config["directories"]["flat"], extensions=extensions, recursive=False)
     # remove excluded files
     exclude_list = []
     for ext in config["directories"].get("exclude", []):

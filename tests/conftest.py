@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
-# Copyright (C) 2022 RERO.
+# Copyright (C) 2025 RERO.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -43,13 +41,13 @@ def new_index_name1():
 
 @pytest.fixture(scope="function")
 def new_index_name2():
-    """An other fixture index name."""
+    """Return another fixture index name."""
     yield "records-2"
 
 
 @pytest.fixture(scope="function")
 def es_runner(app, es, new_index_name1, new_index_name2):
-    """A cli runner that create and remove indexes into es."""
+    """Create and remove indexes into es."""
     for i in [new_index_name1, new_index_name2]:
         current_search_client.indices.delete(
             index=i,
@@ -82,9 +80,7 @@ def create_app(instance_path):
     def factory(**config):
         app = Flask("testapp", instance_path=instance_path)
         app.config.update(**config)
-        app.config.update(
-            RECORDS_REST_ENDPOINTS=copy.deepcopy(_config.RECORDS_REST_ENDPOINTS)
-        )
+        app.config.update(RECORDS_REST_ENDPOINTS=copy.deepcopy(_config.RECORDS_REST_ENDPOINTS))
         REROInvenioBase(app)
         ReroInvenioBaseExportApp(app)
         InvenioDB(app)

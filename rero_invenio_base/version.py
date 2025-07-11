@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -20,6 +18,7 @@
 This file is imported by ``rero_invenio_base.__init__``,
 and parsed by ``setup.py``.
 """
+
 from importlib import metadata
 
 __version__ = metadata.version(__package__)

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -16,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Click elasticsearch snapshot repository command-line utilities."""
-
 
 import json
 
@@ -59,9 +56,7 @@ def create_repository(repository, location, compress):
         }
         click.secho(
             json.dumps(
-                current_search_client.snapshot.create_repository(
-                    repository, body=snapshot_body
-                ),
+                current_search_client.snapshot.create_repository(repository, body=snapshot_body),
                 indent=2,
             ),
             fg="green",
@@ -84,9 +79,7 @@ def delete_repository(repository):
     """Delete a repository."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.snapshot.delete_repository(repository), indent=2
-            ),
+            json.dumps(current_search_client.snapshot.delete_repository(repository), indent=2),
             fg="red",
         )
     except Exception as err:

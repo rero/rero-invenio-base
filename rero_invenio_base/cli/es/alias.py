@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # RERO Invenio Base
 # Copyright (C) 2022 RERO.
 #
@@ -35,9 +33,7 @@ def alias():
 @with_appcontext
 def get_alias():
     """Get elasticsearch aliases."""
-    click.secho(
-        json.dumps(current_search_client.indices.get_alias(), indent=2), fg="green"
-    )
+    click.secho(json.dumps(current_search_client.indices.get_alias(), indent=2), fg="green")
 
 
 @alias.command("put")
@@ -70,9 +66,7 @@ def delete_alias(index, name):
     """Delete elasticsearch alias."""
     try:
         click.secho(
-            json.dumps(
-                current_search_client.indices.delete_alias(index, name), indent=2
-            ),
+            json.dumps(current_search_client.indices.delete_alias(index, name), indent=2),
             fg="green",
         )
     except Exception as err:
