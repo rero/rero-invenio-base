@@ -1,6 +1,6 @@
 [project]
 name = "rero-invenio-base"
-version = "0.3.1"
+version = "0.3.2"
 description = "Generic backend libraries for RERO Invenio instances."
 readme = "README.rst"
 authors = [{name = "RERO",email = "software@rero.ch"}]

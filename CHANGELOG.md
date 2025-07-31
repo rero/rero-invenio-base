@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.3.2](https://github.com/rero/rero-invenio-base/tree/v0.3.2) (2025-07-31)
+
+[Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.1...v0.3.2)
+
+**Changes:**
+
+* feat(dev): add uv and ruff [#21](https://github.com/rero/rero-invenio-base/pull/21) (by @PascalRepond)
+* chore(actions): pypi publish package use poetry [#20](https://github.com/rero/rero-invenio-base/pull/20) (by @PascalRepond)
+
 ## [v0.3.1](https://github.com/rero/rero-invenio-base/tree/v0.3.0) (2025-04-16)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.0...v0.3.1)
