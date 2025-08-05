@@ -1,10 +1,11 @@
 [project]
 name = "rero-invenio-base"
-version = "0.3.2"
+version = "0.3.3"
 description = "Generic backend libraries for RERO Invenio instances."
 readme = "README.rst"
 authors = [{name = "RERO",email = "software@rero.ch"}]
 license = "AGPL-3.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.9, <3.13"
 
 dependencies = [
@@ -69,10 +70,11 @@ lint = {cmd = "ruff check", help = "Checks linting"}
 run_tests = {cmd = "./scripts/test", help = "Runs all tests"}
 
 [build-system]
-requires = ["setuptools"]
+requires = ["uv_build"]
+build-backend = "uv_build"
 
-[tool.setuptools.packages.find]
-where = ["."]
+[tool.uv.build-backend]
+module-root = "."
 
 [tool.uv]
 package = true

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.3](https://github.com/rero/rero-invenio-base/tree/v0.3.3) (2025-08-05)
+
+[Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.2...v0.3.3)
+
+- chore: use uv_publish as a build system (by @PascalRepond)
+
 ## [v0.3.2](https://github.com/rero/rero-invenio-base/tree/v0.3.2) (2025-07-31)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.1...v0.3.2)
