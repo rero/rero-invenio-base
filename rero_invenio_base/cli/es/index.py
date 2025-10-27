@@ -144,20 +144,20 @@ def update_mapping(aliases, settings):
         aliases = current_search.aliases.keys()
     for alias in aliases:
         for index, f_mapping in iter(current_search.aliases.get(alias).items()):
-            with open(f_mapping) as mapping:
-                mapping = json.load(mapping)
-            try:
-                if mapping.get("settings") and settings:
-                    current_search_client.indices.close(index=index)
-                    current_search_client.indices.put_settings(body=mapping.get("settings"), index=index)
-                    current_search_client.indices.open(index=index)
-                res = current_search_client.indices.put_mapping(body=mapping.get("mappings"), index=index)
-            except Exception as excep:
-                click.secho(f"error: {excep}", fg="red")
-            if res.get("acknowledged"):
-                click.secho(f"index: {index} has been successfully updated", fg="green")
-            else:
-                click.secho(f"error: {res}", fg="red")
+            with open(f_mapping) as mapping_file:
+                mapping = json.load(mapping_file)
+                try:
+                    if mapping.get("settings") and settings:
+                        current_search_client.indices.close(index=index)
+                        current_search_client.indices.put_settings(body=mapping.get("settings"), index=index)
+                        current_search_client.indices.open(index=index)
+                    if res := current_search_client.indices.put_mapping(body=mapping.get("mappings"), index=index):
+                        if res.get("acknowledged"):
+                            click.secho(f"index: {index} has been successfully updated", fg="green")
+                        else:
+                            click.secho(f"error: {res}", fg="red")
+                except Exception as excep:
+                    click.secho(f"error: {excep}", fg="red")
 
 
 @index.command("move")

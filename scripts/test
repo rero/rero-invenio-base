@@ -81,6 +81,8 @@ info_msg "Check vulnerabilities:"
 add_exceptions "PYSEC-2022-42969"
 # urllib3 1.26.20 GHSA-pq67-6m6q-mj2v 2.5.0
 add_exceptions "GHSA-pq67-6m6q-mj2v"
+# pip  25.1.1  GHSA-4xh5-x5gv-qwph
+add_exceptions "GHSA-4xh5-x5gv-qwph"
 pip-audit ${pip_audit_exceptions}
 
 info_msg "Check license:"
