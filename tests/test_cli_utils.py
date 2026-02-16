@@ -15,10 +15,10 @@ def test_cli_validate(script_info):
     runner = CliRunner()
     file_name = join(dirname(__file__), "./data/data.json")
 
-    res = runner.invoke(check_json, [file_name], obj=script_info)
+    res = runner.invoke(check_json, [file_name])
     assert res.exit_code == 0
 
     file_name = join(dirname(__file__), "./data/data_bad_indentation.json")
 
-    res = runner.invoke(check_json, [file_name], obj=script_info)
+    res = runner.invoke(check_json, [file_name])
     assert res.exit_code == 1
