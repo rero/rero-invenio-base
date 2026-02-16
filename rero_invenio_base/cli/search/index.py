@@ -10,8 +10,9 @@ from datetime import UTC, datetime
 from pprint import pformat
 
 import click
-from elasticsearch import NotFoundError, RequestError, TransportError
 from invenio_search import current_search, current_search_client
+from opensearch_dsl import Index
+from opensearchpy.exceptions import NotFoundError, OpenSearchException, RequestError, TransportError
 
 try:
     from invenio_search.cli import es_version_check
@@ -150,7 +151,10 @@ def index():
 def reindex(source, destination):
     """Reindex from source.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-reindex.html
+    :param source: source index name
+    :param destination: destination index name
+
+    See: https://opensearch.org/docs/latest/api-reference/document-apis/reindex/
     """
     res = current_search_client.reindex(
         body={
@@ -166,16 +170,14 @@ def reindex(source, destination):
 @with_appcontext
 @click.option("-i", "--index", help="default=_all", default="*")
 def open_index(index):
-    """Open Search index."""
+    """Open Search index.
+
+    :param index: index name or pattern
+    """
     try:
-        click.secho(
-            json.dumps(
-                current_search_client.indices.open(index=index, allow_no_indices=True, ignore_unavailable=True),
-                indent=2,
-            ),
-            fg="green",
-        )
-    except Exception as err:
+        i = Index(index, using=current_search_client)
+        click.secho(json.dumps(i.open(), indent=2), fg="green")
+    except (OpenSearchException, TransportError) as err:
         click.secho(str(err), fg="red")
         sys.exit(1)
 
@@ -184,16 +186,14 @@ def open_index(index):
 @with_appcontext
 @click.option("-i", "--index", help="default=_all", default="*")
 def close_index(index):
-    """Close Search index."""
+    """Close Search index.
+
+    :param index: index name or pattern
+    """
     try:
-        click.secho(
-            json.dumps(
-                current_search_client.indices.close(index=index, allow_no_indices=True, ignore_unavailable=True),
-                indent=2,
-            ),
-            fg="green",
-        )
-    except Exception as err:
+        i = Index(index, using=current_search_client)
+        click.secho(json.dumps(i.close(), indent=2), fg="green")
+    except (OpenSearchException, TransportError) as err:
         click.secho(str(err), fg="red")
         sys.exit(1)
 
@@ -230,7 +230,7 @@ def create_index(resource, index, verbose, templates):
     :param resource: the resource such as documents.
     :param index: the index name such as documents-document-v0.0.1-20211014
     :param verbose: display additional message.
-    :param templates: update also the es templates.
+    :param templates: update also the Search templates.
     """
     _update_templates(verbose, templates)
     f_mapping = list(current_search.aliases.get(resource).values()).pop()
@@ -242,7 +242,11 @@ def create_index(resource, index, verbose, templates):
 @click.option("-s", "--settings/--no-settings", "settings", is_flag=True, default=False)
 @with_appcontext
 def update_mapping(aliases, settings):
-    """Update the mapping of a given alias."""
+    """Update the mapping of a given alias.
+
+    :param aliases: list of alias names to update
+    :param settings: whether to update settings
+    """
     if not aliases:
         aliases = current_search.aliases.keys()
     for alias in aliases:
@@ -279,7 +283,7 @@ def move_index(resource, old, new, templates, verbose, interval):
     :param old: full name of the old index
     :param new: full name of the fresh created index
     :param verbose: display additional message.
-    :param templates: update also the es templates.
+    :param templates: update also the Search templates.
     """
     try:
         _update_templates(verbose, templates)
@@ -475,10 +479,20 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
 @click.option("-s", "--settings", is_flag=True, default=False, help="Display settings.")
 @with_appcontext
 def info(index, aliases, mappings, settings):
-    """List indices of given alias."""
+    """List indices of given alias.
+
+    :param index: index name or pattern
+    :param aliases: whether to display aliases
+    :param mappings: whether to display mappings
+    :param settings: whether to display settings
+    """
 
     def print_info(name, data):
-        """Display additional info."""
+        """Display additional info.
+
+        :param name: information field name
+        :param data: index data dictionary
+        """
         msg = pformat(data.get(name))
         click.secho(f"{name}:", fg="yellow")
         click.secho(f"{msg}", fg="yellow")

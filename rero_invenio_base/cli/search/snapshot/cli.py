@@ -13,6 +13,7 @@ from flask.cli import with_appcontext
 from invenio_search import current_search_client
 
 from ...shared import abort_if_false
+from .policy import policy
 from .repository import repository
 
 # the client aborts a read after 10s by default, which would give up on a
@@ -74,9 +75,10 @@ def _print_response(res):
 
 @click.group()
 def snapshot():
-    """SEARCH snapshot commands."""
+    """Search snapshot commands."""
 
 
+snapshot.add_command(policy)
 snapshot.add_command(repository)
 
 
@@ -230,7 +232,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
     """Restore a snapshot into the cluster.
 
     By default all cluster indices are closed before the restore and reopened
-    afterwards, as SEARCH requires to restore over existing indices. With
+    afterwards, as Search requires to restore over existing indices. With
     --delete the instance indices are dropped beforehand instead.
     """
     closed = False
