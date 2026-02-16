@@ -5,7 +5,7 @@
 
 import click
 
-from .es import es
+from .search import search
 from .utils import utils
 
 
@@ -15,6 +15,6 @@ def rero():
 
 
 rero.add_command(utils)
-rero.add_command(es)
+rero.add_command(search)
 
 __all__ = ["rero"]

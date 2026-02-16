@@ -24,7 +24,7 @@ from ..shared import abort_if_false
 def task():
     """Search task commands.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/tasks.html
+    See: https://opensearch.org/docs/latest/api-reference/tasks/
     """
 
 
@@ -93,6 +93,7 @@ def task_watch(task, interval):
     """Watch task info.
 
     :param task: task id.
+    :param interval: seconds to wait between updates.
     """
     click.secho(f"Watching task: {task}", fg="green")
     try:

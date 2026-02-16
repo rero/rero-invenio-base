@@ -1,17 +1,16 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""RERO Invenio Base export module configuration file."""
+"""RERO Invenio Base export module configuration file.
 
-"""
-  This module must be used to create dynamic export route for resource
-  configured by the `invenio-records-rest`. Exports endpoints will provide
-  streamed content. The content is based on a Search search result;
-  this result is processed using Search `scan()` method to fully
-  implement streamed result.
+    This module must be used to create dynamic export route for resource
+    configured by the `invenio-records-rest`. Exports endpoints will provide
+    streamed content. The content is based on a Search search result;
+    this result is processed using Search `scan()` method to fully
+    implement streamed result.
 
-  Each configured endpoint add a flask blueprint endpoint accessible using the
-  `/export/{resource_list_route}/` url.
+    Each configured endpoint add a flask blueprint endpoint accessible using the
+    `/export/{resource_list_route}/` url.
 
 
 .. code-block:: python

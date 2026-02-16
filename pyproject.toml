@@ -21,10 +21,9 @@ requires-python = ">=3.12, <3.15"
 dependencies = [
     "PyYAML<=7.0.0",
     "jsonpatch<=2.0.0",
-    "invenio-search[elasticsearch7]>=2.1.0",
+    "invenio-search[opensearch2]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
     "invenio-records-rest>=2.2.0",
-
 ]
 
 [dependency-groups]
@@ -59,11 +58,39 @@ testpaths = "tests rero_invenio_base"
 filterwarnings = "ignore::PendingDeprecationWarning"
 
 [tool.ruff]
+target-version = "py314"
 extend-exclude = ["config.py"]
 line-length = 120
 
 [tool.ruff.lint]
-extend-select = ["A", "C4", "DTZ", "INT", "ISC", "T20", "PIE", "Q", "RET", "SIM", "I", "N", "PERF", "W", "D", "F", "UP", "RUF"]
+extend-select = ["A", "C4", "D", "F", "I", "INT", "ISC", "N", "PERF", "PIE", "Q", "RET", "RUF", "SIM", "T20", "UP", "W"]
+ignore = [
+    "A001",    # builtin-variable-shadowing
+    "A002",    # builtin-argument-shadowing
+    "BLE001",  # blind-except: catching `Exception` is deliberate around external services and harvesters
+    "D401",    # non-imperative-mood: docstring wording is left to the author
+    "DTZ",     # flake8-datetimez: naive dates are intentional (MARC dates, circulation dates, display)
+    "F403",    # undefined-local-with-import-star
+    "F841",    # unused-variable
+    "INT001",  # f-string-in-get-text-func-call
+    "N801",    # invalid-class-name
+    "N802",    # invalid-function-name: dojson handlers mirror the MARC field names
+    "N803",    # invalid-argument-name
+    "N806",    # non-lowercase-variable-in-function
+    "N818",    # error-suffix-on-exception-name
+    "PERF401", # manual-list-comprehension
+    "RUF012",  # mutable-class-default: Invenio base classes rely on mutable class attributes
+    "RUF059",  # unused-unpacked-variable
+    "SIM102",  # collapsible-if
+    "SIM115",  # open-file-with-context-handler
+    "T201",    # print
+]
+
+[tool.ruff.lint.per-file-ignores]
+# MARC transliteration fixtures deliberately mix Cyrillic and Latin look-alikes.
+"tests/**" = ["RUF001"]  # ambiguous-unicode-character-string
+# run_on_worker exists to execute caller-supplied code on the workers.
+"rero_invenio_base/modules/tasks.py" = ["S102"]  # exec-builtin
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"

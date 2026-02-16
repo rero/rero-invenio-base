@@ -4,7 +4,7 @@
 
 rero-invenio-base is a Python library providing generic backend utilities for RERO Invenio instances. It ships SEARCH CLI management commands, a streaming data export framework, and shared Celery tasks.
 
-**Stack**: Python 3.12–3.14, Flask (Invenio), ElasticSearch 7, Celery
+**Stack**: Python 3.14, Flask (Invenio), OpenSearch 2, Celery
 **Package manager**: `uv` with `poethepoet` for task running
 
 ## Commands
@@ -34,13 +34,17 @@ rero_invenio_base/
 ├── config.py                 # Default configuration keys
 ├── cli/
 │   ├── shared.py             # Shared CLI helpers (abort_if_false)
-│   ├── utils.py              # check_license, check_json commands
-│   └── es/
-│       ├── alias.py          # `rero es alias` commands
-│       ├── index.py          # `rero es index` commands (reindex, move, update-mapping, …)
-│       ├── task.py           # `rero es task` commands
-│       ├── snapshot/         # `rero es snapshot` commands
-│       └── slm/              # `rero es slm` snapshot-management commands
+│   ├── utils.py              # check_json command
+│   └── search/
+│       ├── alias.py          # `rero search alias` commands
+│       ├── health.py         # `rero search health` connectivity check
+│       ├── index.py          # `rero search index` commands (reindex, move, update-mapping, rebuild, …)
+│       ├── queue.py          # `rero search queue` Celery queue commands
+│       ├── task.py           # `rero search task` commands
+│       └── snapshot/         # `rero search snapshot` commands
+│           ├── cli.py        # snapshot create/list/delete/restore
+│           ├── policy.py     # `rero search snapshot policy` Snapshot Management (SM) policies
+│           └── repository.py # `rero search snapshot repository` commands
 └── modules/
     ├── tasks.py              # run_on_worker Celery task
     ├── utils.py              # chunk() utility
