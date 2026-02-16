@@ -22,7 +22,7 @@ dependencies = [
     "babel>=2.16.0",
     "PyYAML<=7.0.0",
     "jsonpatch<=2.0.0",
-    "invenio-search[elasticsearch7]>=2.1.0",
+    "invenio-search[opensearch2]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
     "invenio-i18n>=3.4.2",
     "invenio-records-rest>=2.2.0",
@@ -59,6 +59,7 @@ testpaths = "tests rero_invenio_base"
 filterwarnings = "ignore::PendingDeprecationWarning"
 
 [tool.ruff]
+target-version = "py314"
 extend-exclude = ["config.py"]
 line-length = 120
 
