@@ -100,7 +100,20 @@ class ExportResource(ContentNegotiatedMethodView):
         serializers_query_aliases=None,
         **kwargs,
     ):
-        """Init magic method."""
+        """Initialize the export resource view.
+
+        Sets up content negotiation, serializers, and search configuration
+        for streaming record exports.
+
+        :param default_media_type: Default MIME type for responses
+        :param permission_factory: Factory for permission checking
+        :param pid_fetcher: PID fetcher name
+        :param search_class: Search class to use
+        :param search_factory: Factory for search object creation
+        :param search_serializers: Dictionary of MIME types to serializers
+        :param serializers_query_aliases: Query parameter aliases for format selection
+        :param kwargs: Additional arguments passed to parent class
+        """
         serializers = {
             mime: obj_or_import_string(search_obj) for mime, search_obj in (search_serializers or {}).items()
         }
@@ -119,8 +132,7 @@ class ExportResource(ContentNegotiatedMethodView):
     @need_record_permission("permission_factory")
     def get(self, **kwargs):
         """Implement GET /export/{resource_list_name}."""
-        search_obj = self.search_class()
-        search = search_obj.with_preference_param().params(version=True)
+        search = self.search_class().with_preference_param().params(version=True)
         search, _ = self.search_factory(search)
 
         return self.make_response(pid_fetcher=None, search_result=search.scan())
