@@ -77,12 +77,16 @@ add_exceptions() {
 }
 
 info_msg "Check vulnerabilities:"
-# py 1.11.0  PYSEC-2022-42969
-add_exceptions "PYSEC-2022-42969"
 # urllib3 1.26.20 GHSA-pq67-6m6q-mj2v 2.5.0
 add_exceptions "GHSA-pq67-6m6q-mj2v"
-# pip  25.1.1  GHSA-4xh5-x5gv-qwph
-add_exceptions "GHSA-4xh5-x5gv-qwph"
+# urllib3 1.26.20 CVE-2025-66418 2.6.0
+add_exceptions "CVE-2025-66418"
+# urllib3 1.26.20 CVE-2025-66471 2.6.0
+add_exceptions "CVE-2025-66471"
+# urllib3   1.26.20 CVE-2026-21441 2.6.3
+add_exceptions "CVE-2026-21441"
+# pytest 8.4.2   CVE-2025-71176 9.0.3
+add_exceptions "CVE-2025-71176"
 pip-audit ${pip_audit_exceptions}
 
 info_msg "Check license:"
@@ -93,10 +97,6 @@ ruff format . --check
 info_msg "Test linting:"
 ruff check
 
-# info_msg "Sphinx-build:"
-# sphinx-build -qnNW docs docs/_build/html
-
-# Note: for now we do not need this for the tests.
 export DOCKER_SERVICES_FILEPATH=./docker-services.yml
 export ELASTICSEARCH_VERSION=7.10.2
 eval "$(docker-services-cli up --search ${SEARCH:-elasticsearch} --env)"

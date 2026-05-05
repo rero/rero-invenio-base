@@ -1,33 +1,38 @@
+[build-system]
+requires = ["uv_build<1.0.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "."
+
+[tool.uv]
+package = true
+
 [project]
 name = "rero-invenio-base"
 version = "0.3.3"
 description = "Generic backend libraries for RERO Invenio instances."
-readme = "README.rst"
+readme = "README.md"
 authors = [{name = "RERO",email = "software@rero.ch"}]
-license = "AGPL-3.0"
+license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.10, <3.15"
 
 dependencies = [
-    "PyYAML (<=7.0)",
-    "jsonpatch (<=2.0)",
-    "Mako (>=1.2.2)",
-    "dparse (>=0.5.2)",
-    "invenio-search [elasticsearch7] (>=2.1.0)",
-    "invenio-db [postgresql] (>=1.1.0)",
-    "invenio-indexer (>=2.2.0)",
-    "invenio-records-rest (>=2.2.0)",
-    "sqlalchemy (>=1.3.0)",
-    "poethepoet>=0.36.0",
+    "PyYAML<=7.0.0",
+    "jsonpatch<=2.0.0",
+    "invenio-search[elasticsearch7]>=2.1.0",
+    "invenio-db[postgresql]>=1.1.0",
+    "invenio-records-rest>=2.2.0",
+
 ]
 
 [dependency-groups]
 dev = [
     "pytest-invenio>=2.1.6",
-    "Sphinx>4.5.0",
     "pip-audit>=2.8.0",
     "docker-services-cli<=1.0.0",
-    "appnope",
+    "poethepoet>=0.36.0",
     "ruff>=0.12.3",
 ]
 
@@ -49,13 +54,13 @@ rero_ils_exports = "rero_invenio_base.modules.export.views:create_blueprint_from
 rero = "rero_invenio_base.modules.tasks"
 
 [tool.pytest.ini_options]
-addopts = "--color=yes --exclude-warning-annotations --doctest-glob=\"*.rst\" --doctest-modules --cov=rero_invenio_base --cov-report=term-missing --ignore=docs/conf.py"
-testpaths = "docs tests rero_invenio_base"
+addopts = "--color=yes --exclude-warning-annotations --doctest-modules --cov=rero_invenio_base --cov-report=term-missing"
+testpaths = "tests rero_invenio_base"
 # not displaying all the PendingDeprecationWarnings from invenio
 filterwarnings = "ignore::PendingDeprecationWarning"
 
 [tool.ruff]
-extend-exclude = ["config.py", "./docs/conf.py"]
+extend-exclude = ["config.py"]
 line-length = 120
 
 [tool.ruff.lint]
@@ -69,12 +74,3 @@ format =  {cmd = "ruff format .", help = "Formats all files"}
 lint = {cmd = "ruff check", help = "Checks linting"}
 run_tests = {cmd = "./scripts/test", help = "Runs all tests"}
 
-[build-system]
-requires = ["uv_build"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-root = "."
-
-[tool.uv]
-package = true

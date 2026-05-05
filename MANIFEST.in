@@ -16,20 +16,15 @@
 include .dockerignore
 include .editorconfig
 include .tx/config
-prune docs/_build
 recursive-include .github/workflows *.yml
 recursive-include rero_invenio_base/translations *.po *.pot *.mo
 
 # added by check-manifest
+include *.md
 include *.rst
 include *.sh
 include *.txt
 include *.yml
-recursive-include docs *.bat
-recursive-include docs *.py
-recursive-include docs *.rst
-recursive-include docs *.txt
-recursive-include docs Makefile
 recursive-include rero_invenio_base *.html
 recursive-include rero_invenio_base *.py
 recursive-include tests *.py
