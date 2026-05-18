@@ -15,10 +15,11 @@
 
 """Generic utils functions."""
 
+from collections.abc import Iterable, Iterator
 from itertools import islice
 
 
-def chunk(iterable, size):
+def chunk[T](iterable: Iterable[T], size: int) -> Iterator[tuple[T, ...]]:
     """Split a list of value into a list of chunks.
 
     :param iterable: an iterator or list to be splitted

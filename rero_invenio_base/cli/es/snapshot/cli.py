@@ -16,7 +16,7 @@
 """Click elasticsearch snapshot command-line utilities."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import click
 from elasticsearch_dsl import Index
@@ -68,7 +68,7 @@ def list_snapshot(repository, name):
     "-n",
     "--name",
     help="default={YYYY.MM.DD_HH:MM:SS}",
-    default=datetime.now(timezone.utc).strftime("%Y.%m.%d_%H:%M:%S"),
+    default=datetime.now(UTC).strftime("%Y.%m.%d_%H:%M:%S"),
 )
 @click.option("-w", "--wait", help="wait=True", is_flag=True, default=False)
 def create_snapshot(repository, name, wait):
