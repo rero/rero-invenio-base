@@ -3,11 +3,10 @@
 
 """Generic utils functions."""
 
-from collections.abc import Iterable, Iterator
 from itertools import islice
 
 
-def chunk[T](iterable: Iterable[T], size: int) -> Iterator[tuple[T, ...]]:
+def chunk(iterable, size):
     """Split a list of value into a list of chunks.
 
     :param iterable: an iterator or list to be splitted
@@ -18,5 +17,5 @@ def chunk[T](iterable: Iterable[T], size: int) -> Iterator[tuple[T, ...]]:
         list(chunk([1, 2, 3, 4, 5], 2)) == [(1, 2), (3, 4), (5, )]
     """
     it = iter(iterable)
-    while chunk := tuple(islice(it, size)):
-        yield chunk
+    while batch := tuple(islice(it, size)):
+        yield batch

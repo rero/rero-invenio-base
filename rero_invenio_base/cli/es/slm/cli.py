@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click elasticsearch snapshot command-line utilities."""
+"""Click Search snapshot lifecycle management (SLM) command-line utilities."""
 
 import json
-import sys
 
 import click
 from elasticsearch import TransportError
@@ -16,7 +15,7 @@ from ...shared import abort_if_false
 
 @click.group()
 def slm():
-    """Elasticsearch snapshot lifecycle management commands."""
+    """Search snapshot lifecycle management commands."""
 
 
 @slm.command()
@@ -27,10 +26,10 @@ def stats():
         click.secho(json.dumps(current_search_client.slm.get_stats(), indent=2), fg="green")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        sys.exit(1)
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        sys.exit(1)
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -41,10 +40,10 @@ def status():
         click.secho(json.dumps(current_search_client.slm.get_status(), indent=2), fg="green")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        sys.exit(1)
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        sys.exit(1)
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -55,10 +54,10 @@ def start():
         click.secho(json.dumps(current_search_client.slm.start(), indent=2), fg="green")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -76,10 +75,10 @@ def stop():
         click.secho(json.dumps(current_search_client.slm.stop(), indent=2), fg="red")
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -101,10 +100,10 @@ def delete(policy_id):
         )
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -119,10 +118,10 @@ def execute(policy_id):
         )
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -137,10 +136,10 @@ def get(name):
         )
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err
 
 
 @slm.command()
@@ -157,7 +156,7 @@ def put(policy_id, body_file):
         )
     except TransportError as err:
         click.secho(f"SLM NOT ENABLED: {err}", fg="red")
-        click.Abort
+        raise click.Abort() from err
     except Exception as err:
         click.secho(str(err), fg="red")
-        click.Abort
+        raise click.Abort() from err

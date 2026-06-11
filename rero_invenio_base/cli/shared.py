@@ -5,6 +5,11 @@
 
 
 def abort_if_false(ctx, param, value):
-    """Abort command is value is False."""
+    """Abort command if value is False.
+
+    :param ctx: Click context object
+    :param param: Click parameter object
+    :param value: Boolean value to check
+    """
     if not value:
         ctx.abort()

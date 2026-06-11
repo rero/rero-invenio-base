@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click elasticsearch command-line utilities."""
+"""Click Search command-line utilities."""
 
 import json
 import os
@@ -45,7 +45,7 @@ def check_json(paths, replace, indent, sort_keys, verbose):
         if os.path.isfile(path):
             files_list.append(path)
         elif os.path.isdir(path):
-            files_list = files_list + glob(os.path.join(path, "**/*.json"), recursive=True)
+            files_list += glob(os.path.join(path, "**/*.json"), recursive=True)
     if not paths:
         files_list = glob("**/*.json", recursive=True)
     tot_error_cnt = 0
@@ -82,4 +82,4 @@ def check_json(paths, replace, indent, sort_keys, verbose):
     sys.exit(tot_error_cnt)
 
 
-__all__ = "utils"
+__all__ = ["utils"]

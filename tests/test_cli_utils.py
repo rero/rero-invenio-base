@@ -11,7 +11,7 @@ from rero_invenio_base.cli.utils import check_json
 
 
 def test_cli_validate(script_info):
-    """Test JOSON indentation cli."""
+    """Test JSON indentation cli."""
     runner = CliRunner()
     file_name = join(dirname(__file__), "./data/data.json")
 

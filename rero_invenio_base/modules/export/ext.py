@@ -3,6 +3,8 @@
 
 """RERO Invenio base module declaration for streamed exports."""
 
+from . import config
+
 
 class ReroInvenioBaseExportApp:
     """RERO Invenio base export app."""
@@ -20,6 +22,6 @@ class ReroInvenioBaseExportApp:
 
     def init_config(self, app):
         """Initialize configuration."""
-        for k in dir(app.config):
+        for k in dir(config):
             if k.startswith("RERO_INVENIO_BASE_EXPORT"):
-                app.config.setdefault(k, getattr(app.config, k))
+                app.config.setdefault(k, getattr(config, k))

@@ -39,7 +39,6 @@ dev = [
 
 [tool.project.entry-points]
 check_json = "rero_invenio_base.cli.utils:check_json"
-rero = "rero_invenio_base.cli:rero"
 
 [project.entry-points."flask.commands"]
 rero = "rero_invenio_base.cli:rero"
