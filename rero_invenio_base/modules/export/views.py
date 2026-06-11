@@ -23,7 +23,7 @@ def create_blueprint_from_app(app):
         that want to register REST endpoints via the ``RECORDS_REST_ENDPOINTS``
         configuration variable.
 
-    :params app: A Flask application.
+    :param app: A Flask application.
     :returns: Configured blueprint.
     """
     api_blueprint = Blueprint("api_exports", __name__, url_prefix="")
@@ -102,7 +102,7 @@ class ExportResource(ContentNegotiatedMethodView):
     ):
         """Init magic method."""
         serializers = {
-            mime: obj_or_import_string(search_obj) for mime, search_obj in search_serializers.items() or {}.items()
+            mime: obj_or_import_string(search_obj) for mime, search_obj in (search_serializers or {}).items()
         }
         super().__init__(
             method_serializers={"GET": serializers},
@@ -112,7 +112,7 @@ class ExportResource(ContentNegotiatedMethodView):
             **kwargs,
         )
         self.permission_factory = permission_factory
-        self.pid_fetcher = current_pidstore.fetchers[pid_fetcher]
+        self.pid_fetcher = current_pidstore.fetchers[pid_fetcher] if pid_fetcher else None
         self.search_class = search_class
         self.search_factory = partial(search_factory, self)
 

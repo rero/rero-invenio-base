@@ -7,7 +7,6 @@ See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
 
-import contextlib
 import copy
 
 import pytest
@@ -42,7 +41,7 @@ def es_runner(app, es, new_index_name1, new_index_name2):
             ignore=[400, 404],
         )
     search = app.extensions["invenio-search"]
-    with contextlib.suppress(AssertionError):
+    if "records" not in search.aliases:
         search.register_mappings("records", "mock_modules.mappings")
     yield CliRunner()
     for i in [new_index_name1, new_index_name2]:
@@ -76,3 +75,14 @@ def create_app(instance_path):
         return app
 
     return factory
+
+
+@pytest.fixture
+def rebuild_runner(app, es):
+    """Runner for rebuild_index tests; cleans up all records-* indices."""
+    current_search_client.indices.delete(index="records-*", ignore_unavailable=True)
+    search = app.extensions["invenio-search"]
+    if "records" not in search.aliases:
+        search.register_mappings("records", "mock_modules.mappings")
+    yield CliRunner()
+    current_search_client.indices.delete(index="records-*", ignore_unavailable=True)

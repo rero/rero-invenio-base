@@ -60,7 +60,7 @@ trap cleanup EXIT
 
 pip_audit_exceptions=""
 add_exceptions() {
-  pip_audit_exceptions="$pip_audit_exceptions --ignore-vuln $1"""
+  pip_audit_exceptions="$pip_audit_exceptions --ignore-vuln $1"
 }
 
 info_msg "Check vulnerabilities:"

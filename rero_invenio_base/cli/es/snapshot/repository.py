@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click elasticsearch snapshot repository command-line utilities."""
+"""Click Search snapshot repository command-line utilities."""
 
 import json
+import os
 
 import click
 from flask.cli import with_appcontext
@@ -14,13 +15,13 @@ from ...shared import abort_if_false
 
 @click.group()
 def repository():
-    """Elasticsearch repository commands."""
+    """SEARCH snapshot repository commands."""
 
 
 @repository.command("list")
 @with_appcontext
 def list_repository():
-    """List repository."""
+    """List all registered snapshot repositories."""
     try:
         click.secho(
             json.dumps(current_search_client.snapshot.get_repository(), indent=2),
@@ -34,13 +35,17 @@ def list_repository():
 @with_appcontext
 @click.argument("repository")
 @click.argument("location")
-@click.option("-c", "--compress", help="compress=True", is_flag=True, default=False)
+@click.option("-c", "--compress", is_flag=True, default=False, help="Enable LZ4 compression for snapshot files.")
 def create_repository(repository, location, compress):
-    """Create repository."""
+    """Create a shared filesystem snapshot repository.
+
+    The repository is registered at LOCATION/REPOSITORY on the filesystem.
+    The path must be accessible from all SEARCH nodes (e.g. an NFS mount).
+    """
     try:
         snapshot_body = {
             "type": "fs",
-            "settings": {"location": f"{location}/{repository}", "compress": compress},
+            "settings": {"location": os.path.join(location, repository), "compress": compress},
         }
         click.secho(
             json.dumps(
@@ -64,7 +69,11 @@ def create_repository(repository, location, compress):
     prompt="Do you really want to delete a repository?",
 )
 def delete_repository(repository):
-    """Delete a repository."""
+    """Unregister a snapshot repository.
+
+    This removes the repository registration from the cluster but does not
+    delete the underlying snapshot data from the filesystem.
+    """
     try:
         click.secho(
             json.dumps(current_search_client.snapshot.delete_repository(repository), indent=2),

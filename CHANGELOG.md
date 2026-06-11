@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 * feat(dev): add uv and ruff [#21](https://github.com/rero/rero-invenio-base/pull/21) (by @PascalRepond)
 * chore(actions): pypi publish package use poetry [#20](https://github.com/rero/rero-invenio-base/pull/20) (by @PascalRepond)
 
-## [v0.3.1](https://github.com/rero/rero-invenio-base/tree/v0.3.0) (2025-04-16)
+## [v0.3.1](https://github.com/rero/rero-invenio-base/tree/v0.3.1) (2025-04-16)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.0...v0.3.1)
 
@@ -62,15 +62,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 ## [v0.2.0](https://github.com/rero/rero-invenio-base/tree/v0.2.0) (2023-01-31)
 
-[Full Changelog](https://github.com/rero/rero-invenio-base/compare/...v0.2.0)
+[Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.1.0...v0.2.0)
 
 **Changes:**
 
 * task: add a generic celery task [\#10](https://github.com/rero/rero-invenio-base/pull/10) (by @jma)
 
 ## [v0.1.0](https://github.com/rero/rero-invenio-base/tree/v0.1.0) (2022-09-02)
-
-[Full Changelog](https://github.com/rero/rero-invenio-base/compare/...v0.1.0)
 
 **Changes:**
 

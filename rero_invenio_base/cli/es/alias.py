@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click elasticsearch index command-line utilities."""
+"""Click Search index command-line utilities."""
 
 import json
 
@@ -14,13 +14,13 @@ from ..shared import abort_if_false
 
 @click.group()
 def alias():
-    """Elasticsearch alias commands."""
+    """Search alias commands."""
 
 
 @alias.command("get")
 @with_appcontext
 def get_alias():
-    """Get elasticsearch aliases."""
+    """Get Search aliases."""
     click.secho(json.dumps(current_search_client.indices.get_alias(), indent=2), fg="green")
 
 
@@ -29,7 +29,7 @@ def get_alias():
 @click.argument("index")
 @click.argument("name")
 def put_alias(index, name):
-    """Put elasticsearch alias."""
+    """Put Search alias."""
     try:
         click.secho(
             json.dumps(current_search_client.indices.put_alias(index, name), indent=2),
@@ -51,7 +51,7 @@ def put_alias(index, name):
     prompt="Do you really want to delete an alias?",
 )
 def delete_alias(index, name):
-    """Delete elasticsearch alias."""
+    """Delete Search alias."""
     try:
         click.secho(
             json.dumps(current_search_client.indices.delete_alias(index, name), indent=2),

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click elasticsearch tasks command-line utilities."""
+"""Click Search tasks command-line utilities."""
 
 import sys
 from pprint import pformat
@@ -17,16 +17,12 @@ except ImportError:
 
 from invenio_search.cli import with_appcontext
 
-
-def abort_if_false(ctx, param, value):
-    """Abort command is value is False."""
-    if not value:
-        ctx.abort()
+from ..shared import abort_if_false
 
 
 @click.group()
 def task():
-    """Elasticsearch task commands.
+    """Search task commands.
 
     See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/tasks.html
     """
