@@ -5,6 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Changelog
 
+<!-- version list -->
+
 ## [v1.0.0](https://github.com/rero/rero-invenio-base/tree/v1.0.0) (2026-05-06)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.3...v1.0.0)
