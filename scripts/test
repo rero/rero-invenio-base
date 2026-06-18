@@ -1,19 +1,6 @@
 #!/usr/bin/env bash
-# RERO Invenio Base
-# Copyright (C) 2025 RERO.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+# SPDX-FileCopyrightText: Fondation RERO+
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Usage:
 #   env DB=postgresql12 SEARCH=elasticsearch7 CACHE=redis MQ=rabbitmq ./run-tests.sh
@@ -92,9 +79,6 @@ add_exceptions "CVE-2026-44431"
 # pytest 8.4.2 CVE-2025-71176 9.0.3
 add_exceptions "CVE-2025-71176"
 pip-audit ${pip_audit_exceptions}
-
-info_msg "Check license:"
-flask rero utils check_license check_license_config.yml --verbose
 
 info_msg "Test formatting:"
 ruff format . --check

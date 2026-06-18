@@ -37,7 +37,6 @@ dev = [
 ]
 
 [tool.project.entry-points]
-check_license = "rero_invenio_base.cli.utils:check_license"
 check_json = "rero_invenio_base.cli.utils:check_json"
 rero = "rero_invenio_base.cli:rero"
 
