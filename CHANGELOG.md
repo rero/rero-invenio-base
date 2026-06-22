@@ -7,6 +7,32 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.1.0 (2026-06-22)
+
+### Chores
+
+- Drop Python 3.10/3.11, fix ruff UP017 and UP047
+  ([`ba68ba4`](https://github.com/rero/rero-invenio-base/commit/ba68ba4fa15044c004eae95f446b8855ac1e8062))
+
+- Update dependencies
+  ([`bef4874`](https://github.com/rero/rero-invenio-base/commit/bef4874fdc07ead1b624335cd4b24b775a445a41))
+
+### Code Style
+
+- Replace verbose license headers with SPDX tags
+  ([`f16d053`](https://github.com/rero/rero-invenio-base/commit/f16d053f9612690ffd2af9a20f5a9a8baf462cbb))
+
+### Continuous Integration
+
+- Add automatic release publication and repo automation
+  ([`a8d6268`](https://github.com/rero/rero-invenio-base/commit/a8d6268d34ff5fb4998b8794960f811917940634))
+
+### Features
+
+- **es**: Improve Search CLI with new commands and safer index management
+  ([`08242e6`](https://github.com/rero/rero-invenio-base/commit/08242e6cae72d2287c5cbba117e5600056bbc122))
+
+
 ## [v1.0.0](https://github.com/rero/rero-invenio-base/tree/v1.0.0) (2026-05-06)
 
 [Full Changelog](https://github.com/rero/rero-invenio-base/compare/v0.3.3...v1.0.0)
