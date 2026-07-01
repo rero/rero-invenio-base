@@ -7,10 +7,9 @@ import json
 import sys
 from datetime import UTC, datetime
 from pprint import pformat
-from time import sleep
 
 import click
-from elasticsearch import NotFoundError
+from elasticsearch import NotFoundError, RequestError, TransportError
 from invenio_search import current_search, current_search_client
 
 try:
@@ -29,27 +28,58 @@ def _create_index_from_mapping(index_name, f_mapping):
     current_search_client.indices.create(index=index_name, body=mapping)
 
 
+def _log_task_progress(task, count):
+    """Fetch current task status and print a one-line progress update.
+
+    :param task: task id.
+    :param count: elapsed seconds to display.
+    """
+    try:
+        res = current_search_client.tasks.get(task)
+        status = res.get("task", {}).get("status", {})
+        created = status.get("created", "?")
+        total = status.get("total", "?")
+        click.secho(f"Watching task: {task} {count} seconds ... {created}/{total}", fg="green")
+    except TransportError:
+        click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
+
+
 def _watch_reindex_task(task, interval, verbose):
-    """Poll a reindex task until completion.
+    """Watch a reindex task until completion using server-side long-polling.
 
     :param task: task id returned by the reindex API.
-    :param interval: seconds between polls.
+    :param interval: seconds to wait per poll (passed as timeout to the tasks API).
     :param verbose: print task progress on each poll.
     :returns: True on success, False if the task reported failures.
     """
     count = 0
-    res = current_search_client.tasks.get(task)
-    while not res.get("completed"):
-        task_info = res.get("task")
-        if verbose and task_info:
-            click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
-            click.secho(f"{task_info.get('description')}", fg="green")
-            click.secho(f"{pformat(task_info.get('status'))}", fg="green")
-        sleep(interval)
+    while True:
+        try:
+            res = current_search_client.tasks.get(task, wait_for_completion=True, timeout=f"{interval}s")
+        except NotFoundError:
+            if verbose:
+                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
+            return True
+        except RequestError as err:
+            if err.error != "index_closed_exception":
+                raise
+            if verbose:
+                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
+            return True
+        except TransportError as err:
+            if err.error != "timeout_exception":
+                raise
+            count += interval
+            if verbose:
+                _log_task_progress(task, count)
+            continue
+        if res.get("completed"):
+            break
         count += interval
-        res = current_search_client.tasks.get(task)
+        if verbose:
+            _log_task_progress(task, count)
     if verbose:
-        click.secho(f"Finished task: {task} {count} seconds ...", fg="yellow")
+        click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
         click.secho(f"{pformat(res.get('response'))}", fg="yellow")
     if failures := res.get("response", {}).get("failures"):
         click.secho(f"ERROR REINDEX: {failures}", fg="red")
@@ -235,9 +265,9 @@ def update_mapping(aliases, settings):
                         if res.get("acknowledged"):
                             click.secho(f"index: {index} has been successfully updated", fg="green")
                         else:
-                            click.secho(f"error: {res}", fg="red")
-                except Exception as excep:
-                    click.secho(f"error: {excep}", fg="red")
+                            click.secho(f"error: {index}: {res}", fg="red")
+                except TransportError as err:
+                    click.secho(f"error: {index}: {err}", fg="red")
 
 
 @index.command("move")
@@ -367,7 +397,7 @@ def _create_and_log(index_name, f_mapping, exit_code):
     "-n", "--name", default=None, help="Override the destination index name (default: registered name + today's date)."
 )
 @click.option(
-    "-i",
+    "-p",
     "--inplace",
     is_flag=True,
     default=False,
