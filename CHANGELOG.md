@@ -7,6 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.1.1 (2026-07-06)
+
+### Bug Fixes
+
+- **es**: Use long-polling to watch reindex tasks
+  ([`bb7547e`](https://github.com/rero/rero-invenio-base/commit/bb7547ef4c53306e565d88a5d885399d55b337a6))
+
+
 ## v1.1.0 (2026-06-22)
 
 ### Chores
