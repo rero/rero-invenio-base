@@ -326,6 +326,7 @@ def _reindex_pass(src, dest, interval, verbose, label, src_label, dest_label, co
     if not _do_reindex(src, dest, interval, verbose, label=label):
         sys.exit(exit_base)
 
+    current_search_client.indices.refresh(index=dest)
     src_count = current_search_client.count(index=src).get("count", "?")
     dest_count = current_search_client.count(index=dest).get("count", "?")
     click.secho(f"  {src}: {src_count} docs  ({src_label})", fg="yellow")
