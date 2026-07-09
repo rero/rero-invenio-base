@@ -7,6 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.1.2 (2026-07-09)
+
+### Bug Fixes
+
+- **es**: Refresh dest index before counting docs
+  ([`f815e09`](https://github.com/rero/rero-invenio-base/commit/f815e092deeb33a2ced611d76ba4c0db413fde48))
+
+
 ## v1.1.1 (2026-07-06)
 
 ### Bug Fixes
