@@ -11,6 +11,7 @@ from flask.cli import with_appcontext
 from invenio_search import current_search, current_search_client
 
 from ...shared import abort_if_false
+from .policy import policy
 from .repository import repository
 
 _STATE_COLORS = {
@@ -57,9 +58,10 @@ def _print_response(res):
 
 @click.group()
 def snapshot():
-    """SEARCH snapshot commands."""
+    """Search snapshot commands."""
 
 
+snapshot.add_command(policy)
 snapshot.add_command(repository)
 
 
@@ -186,11 +188,11 @@ def restore_snapshot(repository, name, wait, delete_indices):
     """Restore a snapshot into the cluster.
 
     By default all cluster indices are closed before the restore and reopened
-    afterwards (required by SEARCH when restoring to existing indices).
+    afterwards (required by Search when restoring to existing indices).
 
     With --delete, only RERO ILS indices (application aliases +
     events-stats-record-view*) are deleted beforehand. This avoids touching
-    system or SEARCH Dashboards indices that are not part of the snapshot.
+    system or Search Dashboards indices that are not part of the snapshot.
     """
     try:
         if delete_indices:

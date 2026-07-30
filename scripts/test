@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Usage:
-#   env DB=postgresql12 SEARCH=elasticsearch7 CACHE=redis MQ=rabbitmq ./run-tests.sh
+#   env SEARCH=opensearch ./scripts/test
 # COLORS for messages
 NC='\033[0m'                    # Default color
 INFO_COLOR='\033[1;97;44m'      # Bold + white + blue background
@@ -50,10 +50,16 @@ set -o errexit
 # Quit on unbound symbols
 set -o nounset
 
+# Compose file describing the services the tests need. It must be passed to
+# every docker-services-cli call: the compose project name is derived from the
+# file's directory, so a `down` without it targets a different project and would
+# leave the container running.
+COMPOSE_FILE=./docker-services.yml
+
 # Always bring down docker services
 function cleanup() {
     # Note: for now we do not need this for the tests.
-    eval "$(docker-services-cli down --env)"
+    docker-services-cli -f "${COMPOSE_FILE}" down
     echo "Done: $?"
 }
 trap cleanup EXIT
@@ -64,30 +70,28 @@ add_exceptions() {
 }
 
 info_msg "Check vulnerabilities:"
-# urllib3 1.26.20 GHSA-pq67-6m6q-mj2v 2.5.0
-add_exceptions "GHSA-pq67-6m6q-mj2v"
-# urllib3 1.26.20 CVE-2025-50181 2.5.0
-add_exceptions "CVE-2025-50181"
-# urllib3 1.26.20 CVE-2025-66418 2.6.0
-add_exceptions "CVE-2025-66418"
-# urllib3 1.26.20 CVE-2025-66471 2.6.0
-add_exceptions "CVE-2025-66471"
-# urllib3 1.26.20 CVE-2026-21441 2.6.3
-add_exceptions "CVE-2026-21441"
-# urllib3 1.26.20 CVE-2026-44431 2.7.0
-add_exceptions "CVE-2026-44431"
-# pytest 8.4.2 CVE-2025-71176 9.0.3
-add_exceptions "CVE-2025-71176"
-pip-audit ${pip_audit_exceptions}
+# pytest 8.4.2   PYSEC-2026-1845 9.0.3
+add_exceptions "PYSEC-2026-1845"
+uv run pip-audit ${pip_audit_exceptions}
 
 info_msg "Test formatting:"
-ruff format . --check
+uv run poe format --check
 info_msg "Test linting:"
-ruff check
+uv run poe lint
 
-export DOCKER_SERVICES_FILEPATH=./docker-services.yml
-export ELASTICSEARCH_VERSION=7.10.2
-eval "$(docker-services-cli up --search ${SEARCH:-elasticsearch} --env)"
+export OPENSEARCH_VERSION=2.19.6
+# `-f` is required: without it docker-services-cli uses the compose file bundled
+# in its own package, which sets no path.repo and so cannot host the snapshot
+# repositories the tests register.
+#
+# No `eval "$(... --env)"`: the only variable it exports for --search is
+# SEARCH_HOSTS, whose value already equals pytest-invenio's default. Calling the
+# CLI directly keeps real boot errors readable and lets `set -o errexit` see a
+# failure. Restore the eval form if this script ever starts --db/--mq/--cache,
+# which do need their connection variables exported.
+docker-services-cli -f "${COMPOSE_FILE}" up --search "${SEARCH:-opensearch}"
 info_msg "Tests:"
-pytest
+uv run pytest
+cleanup
+success_msg+exit "All tests passed!"
 

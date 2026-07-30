@@ -9,22 +9,20 @@ from .alias import alias
 from .health import health
 from .index import index
 from .queue import queue
-from .slm import slm
 from .snapshot import snapshot
 from .task import task
 
 
 @click.group()
-def es():
+def search():
     """Search management commands."""
 
 
-es.add_command(alias)
-es.add_command(health)
-es.add_command(index)
-es.add_command(queue)
-es.add_command(slm)
-es.add_command(snapshot)
-es.add_command(task)
+search.add_command(alias)
+search.add_command(health)
+search.add_command(index)
+search.add_command(queue)
+search.add_command(snapshot)
+search.add_command(task)
 
-__all__ = ["es"]
+__all__ = ["search"]
