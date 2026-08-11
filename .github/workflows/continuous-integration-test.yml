@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12","3.13","3.14"]
         dependencies: ["dev", "deploy"]
     steps:
 
@@ -23,7 +22,7 @@ jobs:
         cache-dependency-glob: uv.lock
 
     - name: Set up Python
-      run: uv python install ${{ matrix.python-version }}
+      run: uv python install 3.14
 
     - name: Update and install dependencies
       if: ${{ matrix.dependencies == 'dev' }}
