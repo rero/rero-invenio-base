@@ -510,8 +510,8 @@ def info(index, aliases, mappings, settings):
         click.secho(f"{msg}", fg="yellow")
 
     indices = current_search_client.indices.get(f"{index}*")
-    for index, data in indices.items():
-        click.secho(f"{index}", fg="green")
+    for index_name, data in indices.items():
+        click.secho(f"{index_name}", fg="green")
         if aliases:
             print_info("aliases", data)
         if mappings:
