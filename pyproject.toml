@@ -19,12 +19,13 @@ license-files = ["LICENSE"]
 requires-python = ">=3.14, <3.15"
 
 dependencies = [
+    "babel>=2.16.0",
     "PyYAML<=7.0.0",
     "jsonpatch<=2.0.0",
     "invenio-search[elasticsearch7]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
+    "invenio-i18n>=3.4.2",
     "invenio-records-rest>=2.2.0",
-
 ]
 
 [dependency-groups]

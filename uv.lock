@@ -1760,7 +1760,9 @@ name = "rero-invenio-base"
 version = "1.1.2"
 source = { editable = "." }
 dependencies = [
+    { name = "babel" },
     { name = "invenio-db", extra = ["postgresql"] },
+    { name = "invenio-i18n" },
     { name = "invenio-records-rest" },
     { name = "invenio-search", extra = ["elasticsearch7"] },
     { name = "jsonpatch" },
@@ -1779,7 +1781,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "babel", specifier = ">=2.16.0" },
     { name = "invenio-db", extras = ["postgresql"], specifier = ">=1.1.0" },
+    { name = "invenio-i18n", specifier = ">=3.4.2" },
     { name = "invenio-records-rest", specifier = ">=2.2.0" },
     { name = "invenio-search", extras = ["elasticsearch7"], specifier = ">=2.1.0" },
     { name = "jsonpatch", specifier = "<=2.0.0" },
