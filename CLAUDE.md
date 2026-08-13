@@ -1,11 +1,13 @@
+<!--
+SPDX-FileCopyrightText: Fondation RERO+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 # rero-invenio-base Claude guide
 
 ## Overview
 
 rero-invenio-base is a Python library providing generic backend utilities for RERO Invenio instances. It ships SEARCH CLI management commands, a streaming data export framework, and shared Celery tasks.
-
-**Stack**: Python 3.12–3.14, Flask (Invenio), ElasticSearch 7, Celery
-**Package manager**: `uv` with `poethepoet` for task running
 
 ## Commands
 
@@ -26,41 +28,6 @@ Human developers will start the required containers and services on their own te
 
 ## Architecture
 
-### Package structure
-
-```text
-rero_invenio_base/
-├── ext.py                    # Flask extension (REROInvenioBase)
-├── config.py                 # Default configuration keys
-├── cli/
-│   ├── shared.py             # Shared CLI helpers (abort_if_false)
-│   ├── utils.py              # check_license, check_json commands
-│   └── es/
-│       ├── alias.py          # `rero es alias` commands
-│       ├── index.py          # `rero es index` commands (reindex, move, update-mapping, …)
-│       ├── task.py           # `rero es task` commands
-│       ├── snapshot/         # `rero es snapshot` commands
-│       └── slm/              # `rero es slm` snapshot-management commands
-└── modules/
-    ├── tasks.py              # run_on_worker Celery task
-    ├── utils.py              # chunk() utility
-    └── export/
-        ├── ext.py            # ReroInvenioBaseExportApp Flask extension
-        ├── views.py          # ExportResource view + create_blueprint_from_app
-        └── config.py         # Export REST endpoint configuration
-```
-
-### Entry points
-
-Registered in `pyproject.toml`:
-
-| Entry point group | Name | Target |
-|---|---|---|
-| `flask.commands` | `rero` | `rero_invenio_base.cli:rero` |
-| `invenio_base.apps` | `rero-invenio-base-export` | `ReroInvenioBaseExportApp` |
-| `invenio_base.api_blueprints` | `rero_ils_exports` | `create_blueprint_from_app` |
-| `invenio_celery.tasks` | `rero` | `rero_invenio_base.modules.tasks` |
-
 ### Export module
 
 `ExportResource` is a `ContentNegotiatedMethodView` that streams record search results. Routes are registered dynamically from the `RERO_INVENIO_BASE_EXPORT_REST_ENDPOINTS` config key via `create_blueprint_from_app`. Each endpoint maps MIME types to serializers and prepends `/export` to the list route.
@@ -69,14 +36,15 @@ Registered in `pyproject.toml`:
 
 - Be clear and concise in docstrings; do not over-comment the code.
 - Do not use Python type annotations (no `-> str`, `: str`, etc. in signatures).
-- Use **Sphinx-style** docstrings (`:param x:`, `:returns:`, `:rtype:`).
+- Ruff is configured in `pyproject.toml`: `line-length = 120` and the excluded files under `[tool.ruff]`, the enabled rule sets under `[tool.ruff.lint]`, and the pep257 docstring convention under `[tool.ruff.lint.pydocstyle]`.
+- Since Python 3.14 (PEP 758), parentheses around multiple exception types are optional when the `except`/`except*` clause has no `as` target: `except AttributeError, UnboundLocalError:` is valid and equivalent to `except (AttributeError, UnboundLocalError):` — not the old Python 2 comma syntax. `ruff format` removes the parentheses in that case; this is expected, not a bug. Parentheses are still required when binding the exception: `except (AttributeError, UnboundLocalError) as error:`.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org).
 
 ## Testing
 
 - Tests use function-based style (no class-based tests).
-- Test fixtures are in `tests/conftest.py`; sample data in `tests/data/`.
-- `--doctest-modules` is active — doctests in module files are run by default.
+- The project follows a test-driven development methodology. Each commit must be accompanied by tests that ensure that the functionality works as intended. Tests must follow DRY principles and should only test specific app behaviour and not the behaviour of external modules (e.g. invenio dependencies).
+- `--doctest-modules` is active and `testpaths` includes `rero_invenio_base`, so any `>>>` example written in a docstring is collected and run as a test.
 
 ### Running the tests (done by humans)
 
