@@ -7,6 +7,29 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.2.0 (2026-08-18)
+
+### Chores
+
+- Update dependencies
+  ([`4588e29`](https://github.com/rero/rero-invenio-base/commit/4588e2967d57dc81559abf429600dcdcdb769a8d))
+
+### Continuous Integration
+
+- Bump actions to their latest releases
+  ([`aa4e5a1`](https://github.com/rero/rero-invenio-base/commit/aa4e5a130b1af637041c24c8654f805b40a3ac5f))
+
+### Documentation
+
+- Keep only non-derivable rules in CLAUDE.md
+  ([`5f0b6a8`](https://github.com/rero/rero-invenio-base/commit/5f0b6a8351882ffb9b0bcbcb850a4693af74f15d))
+
+### Features
+
+- **export**: Add streamed XLSX support
+  ([`0482148`](https://github.com/rero/rero-invenio-base/commit/048214825a29bf3ebcc1e95f66154eef9981eca7))
+
+
 ## v1.1.2 (2026-07-09)
 
 ### Bug Fixes
