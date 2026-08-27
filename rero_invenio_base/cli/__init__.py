@@ -5,6 +5,7 @@
 
 import click
 
+from .batch import batch
 from .es import es
 from .utils import utils
 
@@ -14,6 +15,7 @@ def rero():
     """RERO management commands."""
 
 
+rero.add_command(batch)
 rero.add_command(utils)
 rero.add_command(es)
 
