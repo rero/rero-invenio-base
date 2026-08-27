@@ -7,6 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.3.0 (2026-08-27)
+
+### Features
+
+- **cli**: Add a batch command
+  ([`fcbe3d9`](https://github.com/rero/rero-invenio-base/commit/fcbe3d95c868b16ce090014ed6fce6af4b04e020))
+
+
 ## v1.2.0 (2026-08-18)
 
 ### Chores
