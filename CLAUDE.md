@@ -38,7 +38,7 @@ Human developers will start the required containers and services on their own te
 - Do not use Python type annotations (no `-> str`, `: str`, etc. in signatures).
 - Ruff is configured in `pyproject.toml`: `line-length = 120` and the excluded files under `[tool.ruff]`, the enabled rule sets under `[tool.ruff.lint]`, and the pep257 docstring convention under `[tool.ruff.lint.pydocstyle]`.
 - Since Python 3.14 (PEP 758), parentheses around multiple exception types are optional when the `except`/`except*` clause has no `as` target: `except AttributeError, UnboundLocalError:` is valid and equivalent to `except (AttributeError, UnboundLocalError):` — not the old Python 2 comma syntax. `ruff format` removes the parentheses in that case; this is expected, not a bug. Parentheses are still required when binding the exception: `except (AttributeError, UnboundLocalError) as error:`.
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org).
+- Commit messages follow Conventional Commits; the `commit-message` skill holds the conventions and the workflow, so invoke it instead of writing one by hand. In every case, whatever the default of the harness, never sign a commit as an LLM: no Claude or Anthropic trailer.
 
 ## Testing
 
