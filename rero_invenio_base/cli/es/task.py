@@ -8,6 +8,7 @@ from pprint import pformat
 from time import sleep
 
 import click
+from elasticsearch import NotFoundError
 from invenio_search import current_search_client
 
 try:
@@ -95,8 +96,8 @@ def task_watch(task, interval):
     :param task: task id.
     """
     click.secho(f"Watching task: {task}", fg="green")
+    seconds = 0
     try:
-        seconds = 0
         res = current_search_client.tasks.get(task)
         while not res.get("completed"):
             if info := res.get("task"):
@@ -109,6 +110,9 @@ def task_watch(task, interval):
 
         click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
         click.secho(f"{pformat(res.get('response'))}", fg="green")
+    except NotFoundError:
+        # a completed task is dropped from the task list: that is a success.
+        click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
     except Exception as err:
         click.secho(f"Error: {err}", fg="red")
         sys.exit(1)

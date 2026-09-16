@@ -4,6 +4,7 @@
 """Click Search index command-line utilities."""
 
 import json
+import sys
 
 import click
 from flask.cli import with_appcontext
@@ -37,6 +38,7 @@ def put_alias(index, name):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @alias.command("delete")
@@ -59,3 +61,4 @@ def delete_alias(index, name):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)

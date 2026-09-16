@@ -5,6 +5,7 @@
 
 import json
 import os
+import sys
 
 import click
 from flask.cli import with_appcontext
@@ -29,6 +30,7 @@ def list_repository():
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @repository.command("create")
@@ -56,6 +58,7 @@ def create_repository(repository, location, compress):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @repository.command("delete")
@@ -81,3 +84,4 @@ def delete_repository(repository):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)

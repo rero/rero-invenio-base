@@ -4,14 +4,20 @@
 """Click Search snapshot command-line utilities."""
 
 import json
+import sys
 from datetime import UTC, datetime
 
 import click
+from flask import current_app
 from flask.cli import with_appcontext
-from invenio_search import current_search, current_search_client
+from invenio_search import current_search_client
 
 from ...shared import abort_if_false
 from .repository import repository
+
+# the client aborts a read after 10s by default, which would give up on a
+# snapshot that is still running on the cluster.
+WAIT_REQUEST_TIMEOUT = 86400
 
 _STATE_COLORS = {
     "SUCCESS": "green",
@@ -43,6 +49,17 @@ def _print_snapshot_table(snapshots_list):
         )
         click.echo(line, nl=False)
         click.secho(state, fg=_STATE_COLORS.get(state))
+
+
+def _instance_indices():
+    """Return the index pattern covering every index of this instance.
+
+    Matches on SEARCH_INDEX_PREFIX, so indices no alias knows about, such as
+    the invenio-stats ones, are covered too. Without a prefix the instance owns
+    the cluster: take everything but the system indices.
+    """
+    prefix = current_app.config.get("SEARCH_INDEX_PREFIX") or ""
+    return f"{prefix}*" if prefix else "*,-.*,-ilm-history-*,-slm-history-*"
 
 
 def _print_response(res):
@@ -97,6 +114,7 @@ def list_snapshot(repository, name, names_only):
             click.secho(json.dumps(snapshots, indent=2), fg="green")
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @snapshot.command("create")
@@ -105,24 +123,38 @@ def list_snapshot(repository, name, names_only):
 @click.option(
     "-n",
     "--name",
-    default=datetime.now(UTC).strftime("%Y.%m.%d_%H:%M:%S"),
+    default=lambda: datetime.now(UTC).strftime("%Y.%m.%d_%H:%M:%S"),
     help="Snapshot name. Defaults to the current UTC timestamp (YYYY.MM.DD_HH:MM:SS).",
 )
+@click.option("-i", "--indices", default=None, help="Index pattern to capture. Defaults to the instance indices.")
+@click.option(
+    "-g",
+    "--global-state/--no-global-state",
+    "global_state",
+    default=True,
+    help="Capture the global state: index templates, pipelines, cluster settings.",
+)
 @click.option("-w", "--wait", is_flag=True, default=False, help="Wait for the snapshot to complete before returning.")
-def create_snapshot(repository, name, wait):
-    """Create a snapshot of all RERO ILS indices.
+def create_snapshot(repository, name, indices, global_state, wait):
+    """Create a snapshot of all indices of this instance.
 
-    Captures all indices registered in the application aliases plus
-    events-stats-record-view*. Global cluster state is excluded.
+    Aborts when the pattern matches nothing, rather than writing an empty
+    snapshot.
     """
-    indices = [f"{v}*" for v in current_search.aliases] + ["events-stats-record-view*"]
+    indices = indices or _instance_indices()
+    found = sorted(idx["index"] for idx in current_search_client.cat.indices(index=indices, h="index", format="json"))
+    if not found:
+        click.secho(f"No index matches '{indices}'. Aborting.", fg="red")
+        sys.exit(1)
+    click.secho(f"Snapshotting {len(found)} indices matching '{indices}'.", fg="green")
     try:
         res = current_search_client.snapshot.create(
             repository,
             name,
-            body={"indices": ",".join(indices), "include_global_state": False},
+            body={"indices": indices, "include_global_state": global_state},
             wait_for_completion=wait,
             master_timeout="5m",
+            request_timeout=WAIT_REQUEST_TIMEOUT if wait else None,
         )
         if wait:
             snap = res.get("snapshot", {})
@@ -137,7 +169,10 @@ def create_snapshot(repository, name, wait):
         else:
             _print_response(res)
     except Exception as err:
-        click.secho(str(err), fg="red")
+        click.secho(f"ERROR SNAPSHOT: {err}", fg="red")
+        if getattr(err, "error", None) == "invalid_snapshot_name_exception":
+            click.secho(f"Delete '{name}' first, or pick another name with --name.", fg="yellow")
+        sys.exit(1)
 
 
 @snapshot.command("delete")
@@ -157,6 +192,7 @@ def delete_snapshot(repository, name):
         _print_response(current_search_client.snapshot.delete(repository, name))
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @snapshot.command("restore")
@@ -171,9 +207,17 @@ def delete_snapshot(repository, name):
     is_flag=True,
     default=False,
     help=(
-        "Delete RERO ILS indices before restoring instead of closing all cluster indices. "
-        "Safer for production: system and Search Dashboards indices are left untouched."
+        "Delete the instance indices instead of closing all cluster indices. "
+        "Safer in production: system and Search Dashboards indices are left untouched."
     ),
+)
+@click.option(
+    "-g",
+    "--global-state",
+    "global_state",
+    is_flag=True,
+    default=False,
+    help="Also restore the global state. Overwrites index templates, pipelines and cluster settings.",
 )
 @click.option(
     "--yes-i-know",
@@ -182,29 +226,33 @@ def delete_snapshot(repository, name):
     expose_value=False,
     prompt="Do you really want to restore this snapshot? This will disrupt or delete existing indices.",
 )
-def restore_snapshot(repository, name, wait, delete_indices):
+def restore_snapshot(repository, name, wait, delete_indices, global_state):
     """Restore a snapshot into the cluster.
 
     By default all cluster indices are closed before the restore and reopened
-    afterwards (required by SEARCH when restoring to existing indices).
-
-    With --delete, only RERO ILS indices (application aliases +
-    events-stats-record-view*) are deleted beforehand. This avoids touching
-    system or SEARCH Dashboards indices that are not part of the snapshot.
+    afterwards, as SEARCH requires to restore over existing indices. With
+    --delete the instance indices are dropped beforehand instead.
     """
     try:
         if delete_indices:
-            rero_indices = ",".join([f"{v}*" for v in current_search.aliases] + ["events-stats-record-view*"])
-            click.secho(f"Indices to delete: {rero_indices}", fg="yellow")
+            instance_indices = _instance_indices()
+            click.secho(f"Indices to delete: {instance_indices}", fg="yellow")
             if not click.confirm("Confirm deletion of the above indices before restore?"):
                 raise click.Abort()
-            current_search_client.indices.delete(index=rero_indices, allow_no_indices=True, ignore_unavailable=True)
-            click.secho("RERO ILS indices deleted.")
+            current_search_client.indices.delete(index=instance_indices, allow_no_indices=True, ignore_unavailable=True)
+            click.secho("Instance indices deleted.")
         else:
             current_search_client.indices.close(index="*", allow_no_indices=True, ignore_unavailable=True)
             click.secho("All indices are closed.")
         _print_response(
-            current_search_client.snapshot.restore(repository, name, master_timeout="5m", wait_for_completion=wait)
+            current_search_client.snapshot.restore(
+                repository,
+                name,
+                body={"include_global_state": global_state},
+                master_timeout="5m",
+                wait_for_completion=wait,
+                request_timeout=WAIT_REQUEST_TIMEOUT if wait else None,
+            )
         )
         if not delete_indices:
             if wait:
@@ -217,3 +265,4 @@ def restore_snapshot(repository, name, wait, delete_indices):
         raise
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)

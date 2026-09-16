@@ -5,6 +5,7 @@
 
 import json
 import sys
+import time
 from datetime import UTC, datetime
 from pprint import pformat
 
@@ -21,41 +22,37 @@ from invenio_search.cli import with_appcontext
 from jsonpatch import make_patch
 
 
-def _create_index_from_mapping(index_name, f_mapping):
-    """Create an Search index from a mapping file."""
-    with open(f_mapping) as mapping_file:
-        mapping = json.load(mapping_file)
-    current_search_client.indices.create(index=index_name, body=mapping)
+def _create_index(index_name, f_mapping, exit_code=1):
+    """Create a Search index from a mapping file, log the result, exit on failure.
 
-
-def _log_task_progress(task, count):
-    """Fetch current task status and print a one-line progress update.
-
-    :param task: task id.
-    :param count: elapsed seconds to display.
+    :param index_name: name of the index to create.
+    :param f_mapping: path to the mapping file.
+    :param exit_code: exit code used when the creation fails.
     """
     try:
-        res = current_search_client.tasks.get(task)
-        status = res.get("task", {}).get("status", {})
-        created = status.get("created", "?")
-        total = status.get("total", "?")
-        click.secho(f"Watching task: {task} {count} seconds ... {created}/{total}", fg="green")
-    except TransportError:
-        click.secho(f"Watching task: {task} {count} seconds ...", fg="green")
+        with open(f_mapping) as mapping_file:
+            current_search_client.indices.create(index=index_name, body=json.load(mapping_file))
+        click.secho(f"Index {index_name} created.", fg="green")
+    except Exception as err:
+        click.secho(f"ERROR CREATE: {err}", fg="red")
+        sys.exit(exit_code)
 
 
 def _watch_reindex_task(task, interval, verbose):
-    """Watch a reindex task until completion using server-side long-polling.
+    """Watch a reindex task until completion.
+
+    The interval paces the polling loop only, it is never sent to Search as a
+    timeout.
 
     :param task: task id returned by the reindex API.
-    :param interval: seconds to wait per poll (passed as timeout to the tasks API).
+    :param interval: seconds to wait between two status polls.
     :param verbose: print task progress on each poll.
     :returns: True on success, False if the task reported failures.
     """
     count = 0
     while True:
         try:
-            res = current_search_client.tasks.get(task, wait_for_completion=True, timeout=f"{interval}s")
+            res = current_search_client.tasks.get(task)
         except NotFoundError:
             if verbose:
                 click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
@@ -66,18 +63,15 @@ def _watch_reindex_task(task, interval, verbose):
             if verbose:
                 click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
             return True
-        except TransportError as err:
-            if err.error != "timeout_exception":
-                raise
-            count += interval
-            if verbose:
-                _log_task_progress(task, count)
-            continue
         if res.get("completed"):
             break
-        count += interval
         if verbose:
-            _log_task_progress(task, count)
+            status = res.get("task", {}).get("status", {})
+            created = status.get("created", "?")
+            total = status.get("total", "?")
+            click.secho(f"Watching task: {task} {count} seconds ... {created}/{total}", fg="green")
+        time.sleep(interval)
+        count += interval
     if verbose:
         click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
         click.secho(f"{pformat(res.get('response'))}", fg="yellow")
@@ -92,7 +86,7 @@ def _do_reindex(src, dest, interval, verbose, label="Task"):
 
     :param src: source index name.
     :param dest: destination index name.
-    :param interval: seconds between polls (0 = fire and forget).
+    :param interval: seconds to wait between two status polls (0 = fire and forget).
     :param verbose: print task progress on each poll.
     :param label: prefix shown before the task id.
     :returns: True on success or when fire-and-forget, False on task failures.
@@ -183,6 +177,7 @@ def open_index(index):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @index.command("close")
@@ -200,6 +195,7 @@ def close_index(index):
         )
     except Exception as err:
         click.secho(str(err), fg="red")
+        sys.exit(1)
 
 
 @index.command("switch")
@@ -237,11 +233,8 @@ def create_index(resource, index, verbose, templates):
     :param templates: update also the es templates.
     """
     _update_templates(verbose, templates)
-
     f_mapping = list(current_search.aliases.get(resource).values()).pop()
-    with open(f_mapping) as mapping:
-        current_search_client.indices.create(index, json.load(mapping))
-    click.secho(f"Index {index} has been created.", fg="green")
+    _create_index(index, f_mapping)
 
 
 @index.command()
@@ -291,11 +284,10 @@ def move_index(resource, old, new, templates, verbose, interval):
     try:
         _update_templates(verbose, templates)
         f_mapping = list(current_search.aliases.get(resource).values()).pop()
-        _create_index_from_mapping(new, f_mapping)
-        click.secho(f"Index {new} has been created.", fg="green")
     except Exception as err:
         click.secho(f"ERROR CREATE: {err}", fg="red")
         sys.exit(1)
+    _create_index(new, f_mapping)
 
     if not _do_reindex(old, new, interval, verbose):
         sys.exit(2)
@@ -350,41 +342,6 @@ def _reindex_pass(src, dest, interval, verbose, label, src_label, dest_label, co
         sys.exit(exit_base + 2)
 
     return True
-
-
-def _create_fresh(resource, new_index, f_mapping):
-    """Bootstrap a resource that has no index yet: create it and register the alias.
-
-    :param resource: alias name to register.
-    :param new_index: index name to create.
-    :param f_mapping: path to the mapping file.
-    """
-    if current_search_client.indices.exists(index=new_index):
-        click.secho(f"Index {new_index} already exists but alias '{resource}' is not set. Aborting.", fg="red")
-        sys.exit(1)
-    click.secho(f"No existing index for '{resource}'. Creating {new_index}...", fg="yellow")
-    try:
-        _create_index_from_mapping(new_index, f_mapping)
-        current_search_client.indices.put_alias(index=new_index, name=resource)
-        click.secho(f"Index {new_index} created, alias '{resource}' registered.", fg="green")
-    except Exception as err:
-        click.secho(f"ERROR CREATE: {err}", fg="red")
-        sys.exit(1)
-
-
-def _create_and_log(index_name, f_mapping, exit_code):
-    """Create an index from mapping, log the result, and exit on failure.
-
-    :param index_name: name of the index to create.
-    :param f_mapping: path to the mapping file.
-    :param exit_code: exit code used when the creation fails.
-    """
-    try:
-        _create_index_from_mapping(index_name, f_mapping)
-        click.secho(f"Index {index_name} created.", fg="green")
-    except Exception as err:
-        click.secho(f"ERROR CREATE: {err}", fg="red")
-        sys.exit(exit_code)
 
 
 @index.command("rebuild")
@@ -442,7 +399,17 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
         sys.exit(1)
 
     if not old_indices:
-        _create_fresh(resource, new_index, f_mapping)
+        if current_search_client.indices.exists(index=new_index):
+            click.secho(f"Index {new_index} already exists but alias '{resource}' is not set. Aborting.", fg="red")
+            sys.exit(1)
+        click.secho(f"No existing index for '{resource}'. Creating {new_index}...", fg="yellow")
+        _create_index(new_index, f_mapping)
+        try:
+            current_search_client.indices.put_alias(index=new_index, name=resource)
+            click.secho(f"Alias '{resource}' registered.", fg="green")
+        except Exception as err:
+            click.secho(f"ERROR ALIAS: {err}", fg="red")
+            sys.exit(1)
         return
 
     old_index = old_indices[0]
@@ -450,7 +417,7 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
     if inplace:
         tmp_index = f"{old_index}-tmp-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
         click.secho(f"Rebuilding '{resource}' in place: {old_index} → {tmp_index} → {old_index}", fg="green")
-        _create_and_log(tmp_index, f_mapping, exit_code=1)
+        _create_index(tmp_index, f_mapping)
         if not _reindex_pass(
             src=old_index,
             dest=tmp_index,
@@ -479,7 +446,7 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
         final_dest = new_index
         exit_base = 2
 
-    _create_and_log(final_dest, f_mapping, exit_code=exit_base - 1)
+    _create_index(final_dest, f_mapping, exit_code=exit_base - 1)
     _reindex_pass(
         src=src,
         dest=final_dest,
