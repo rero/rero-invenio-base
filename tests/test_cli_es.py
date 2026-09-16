@@ -178,7 +178,7 @@ def test_rebuild_index_normal_confirm(rebuild_runner, script_info):
     current_search_client.indices.put_alias(index=old, name="records")
     res = rebuild_runner.invoke(
         rebuild_index,
-        ["records", "--no-templates", "--interval", "0"],
+        ["records", "--no-templates"],
         input="y\n",
         obj=script_info,
     )
@@ -188,6 +188,22 @@ def test_rebuild_index_normal_confirm(rebuild_runner, script_info):
     assert current_search_client.indices.exists_alias(name="records")
 
 
+def test_rebuild_index_keeps_the_source_when_not_waiting(rebuild_runner, script_info):
+    """--interval 0 does not wait, so it must not switch nor delete anything."""
+    old = _old_index()
+    current_search_client.indices.create(index=old, body={})
+    current_search_client.indices.put_alias(index=old, name="records")
+    res = rebuild_runner.invoke(
+        rebuild_index,
+        ["records", "--no-templates", "--interval", "0"],
+        obj=script_info,
+    )
+    assert res.exit_code == 0
+    assert "Not waiting for the task" in res.output
+    assert current_search_client.indices.exists(index=old)
+    assert list(current_search_client.indices.get_alias(name="records")) == [old]
+
+
 def test_rebuild_index_normal_abort(rebuild_runner, script_info):
     """Rebuild leaves cluster unchanged when the user declines the confirmation."""
     old = _old_index()
@@ -195,7 +211,7 @@ def test_rebuild_index_normal_abort(rebuild_runner, script_info):
     current_search_client.indices.put_alias(index=old, name="records")
     res = rebuild_runner.invoke(
         rebuild_index,
-        ["records", "--no-templates", "--interval", "0"],
+        ["records", "--no-templates"],
         input="n\n",
         obj=script_info,
     )
@@ -212,7 +228,7 @@ def test_rebuild_index_inplace(rebuild_runner, script_info):
     current_search_client.indices.put_alias(index=old, name="records")
     res = rebuild_runner.invoke(
         rebuild_index,
-        ["records", "--no-templates", "--inplace", "--interval", "0"],
+        ["records", "--no-templates", "--inplace"],
         input="y\ny\n",
         obj=script_info,
     )
@@ -231,7 +247,7 @@ def test_rebuild_index_inplace_abort_second_confirm(rebuild_runner, script_info)
     current_search_client.indices.put_alias(index=old, name="records")
     res = rebuild_runner.invoke(
         rebuild_index,
-        ["records", "--no-templates", "--inplace", "--interval", "0"],
+        ["records", "--no-templates", "--inplace"],
         input="y\nn\n",
         obj=script_info,
     )

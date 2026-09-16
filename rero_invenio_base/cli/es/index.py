@@ -318,6 +318,13 @@ def _reindex_pass(src, dest, interval, verbose, label, src_label, dest_label, co
     if not _do_reindex(src, dest, interval, verbose, label=label):
         sys.exit(exit_base)
 
+    if interval <= 0:
+        # nothing waited for the copy, so its documents are still on their way:
+        # switching the alias now would publish a partial index and deleting the
+        # source would take the documents away from under the running task.
+        click.secho(f"Not waiting for the task: '{src}' is kept and the alias is unchanged.", fg="yellow")
+        return False
+
     current_search_client.indices.refresh(index=dest)
     src_count = current_search_client.count(index=src).get("count", "?")
     dest_count = current_search_client.count(index=dest).get("count", "?")
