@@ -253,7 +253,8 @@ def test_xlsx_preserves_typed_values_and_missing_cells():
     rows = _inspect_xlsx(_xlsx_bytes(csv_data))["rows"]
 
     assert [cell["type"] for cell in rows[1]] == ["n", "d", "b", "s", "s"]
-    assert rows[1][1]["value"] == "46232.52135559555555555555556"
+    # 14:30:45.123456 of day 46232, the wall clock as written, not shifted to UTC
+    assert rows[1][1]["value"] == "46232.60468892888888888888889"
     assert rows[1][3]["value"] == "000123"
     assert rows[1][4]["value"] == value.replace("\x01", "\ufffd")
     assert [cell["value"] for cell in rows[2]] == ["item1", "", "0", "", ""]

@@ -6,7 +6,7 @@
 import csv
 import struct
 import zlib
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from functools import partial
 from xml.sax.saxutils import escape
@@ -66,7 +66,8 @@ STYLES = b"""<?xml version="1.0" encoding="UTF-8"?>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>"""
 
-EXCEL_EPOCH = datetime(1899, 12, 30, tzinfo=UTC)
+# naive on purpose: a serial counts wall-clock days, it carries no timezone.
+EXCEL_EPOCH = datetime(1899, 12, 30)  # noqa: DTZ001
 INVALID_WORKSHEET_NAME_CHARACTERS = set("[]:*?/\\")
 
 
@@ -340,9 +341,11 @@ def excel_serial(value):
         return None
 
     if isinstance(parsed, datetime):
-        parsed = parsed.astimezone(UTC) if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+        # A serial is a wall clock, so keep the time as written. Shifting it to
+        # UTC would move an early morning timestamp to the day before.
+        parsed = parsed.replace(tzinfo=None)
     else:
-        parsed = datetime(parsed.year, parsed.month, parsed.day, tzinfo=UTC)
+        parsed = datetime(parsed.year, parsed.month, parsed.day)  # noqa: DTZ001
 
     delta = parsed - EXCEL_EPOCH
     serial = Decimal(delta.days)
