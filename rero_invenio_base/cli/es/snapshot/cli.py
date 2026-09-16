@@ -59,7 +59,7 @@ def _instance_indices():
     the cluster: take everything but the system indices.
     """
     prefix = current_app.config.get("SEARCH_INDEX_PREFIX") or ""
-    return f"{prefix}*" if prefix else "*,-.*,-ilm-history-*,-slm-history-*"
+    return f"{prefix}*" if prefix else "*,-.*,-ilm-history-*"
 
 
 def _print_response(res):
@@ -233,6 +233,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
     afterwards, as SEARCH requires to restore over existing indices. With
     --delete the instance indices are dropped beforehand instead.
     """
+    closed = False
     try:
         if delete_indices:
             instance_indices = _instance_indices()
@@ -243,6 +244,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
             click.secho("Instance indices deleted.")
         else:
             current_search_client.indices.close(index="*", allow_no_indices=True, ignore_unavailable=True)
+            closed = True
             click.secho("All indices are closed.")
         _print_response(
             current_search_client.snapshot.restore(
@@ -254,7 +256,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
                 request_timeout=WAIT_REQUEST_TIMEOUT if wait else None,
             )
         )
-        if not delete_indices:
+        if closed:
             if wait:
                 click.secho("Opening all indices...")
                 current_search_client.indices.open(index="*", allow_no_indices=True, ignore_unavailable=True)
@@ -265,4 +267,10 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
         raise
     except Exception as err:
         click.secho(str(err), fg="red")
+        if closed:
+            # nothing is restoring any more, so leaving the cluster closed,
+            # system indices included, would only add an outage to the failure.
+            click.secho("Restore failed, reopening all indices...", fg="yellow")
+            current_search_client.indices.open(index="*", allow_no_indices=True, ignore_unavailable=True)
+            click.secho("All indices are open.", fg="yellow")
         sys.exit(1)

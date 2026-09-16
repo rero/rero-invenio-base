@@ -327,8 +327,8 @@ def test_watch_reindex_task_propagates_other_errors(monkeypatch):
         _watch_reindex_task("task-5", 5, verbose=False)
 
 
-def _fake_snapshot_client(monkeypatch, captured, error=None):
-    """Keep the real cat API but capture the snapshot and delete calls."""
+def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None):
+    """Keep the real cat API but capture the snapshot and indices calls."""
 
     def snapshot_create(repository, name, body=None, **kwargs):
         captured["create"] = {"repository": repository, "name": name, "body": body, **kwargs}
@@ -338,10 +338,20 @@ def _fake_snapshot_client(monkeypatch, captured, error=None):
 
     def snapshot_restore(repository, name, body=None, **kwargs):
         captured["restore"] = {"repository": repository, "name": name, "body": body}
+        if restore_error:
+            raise restore_error
         return {"accepted": True}
 
     def indices_delete(index=None, **kwargs):
         captured["delete"] = index
+        return {"acknowledged": True}
+
+    def indices_close(index=None, **kwargs):
+        captured["close"] = index
+        return {"acknowledged": True}
+
+    def indices_open(index=None, **kwargs):
+        captured["open"] = index
         return {"acknowledged": True}
 
     snapshot_cli = sys.modules[create_snapshot.callback.__module__]
@@ -351,7 +361,7 @@ def _fake_snapshot_client(monkeypatch, captured, error=None):
         SimpleNamespace(
             cat=current_search_client.cat,
             snapshot=SimpleNamespace(create=snapshot_create, restore=snapshot_restore),
-            indices=SimpleNamespace(delete=indices_delete),
+            indices=SimpleNamespace(delete=indices_delete, close=indices_close, open=indices_open),
         ),
     )
 
@@ -405,6 +415,18 @@ def test_snapshot_create_duplicate_name(script_info, app, es_runner, monkeypatch
     res = es_runner.invoke(create_snapshot, ["tests", "--name", "20260916_1544"], obj=script_info)
     assert res.exit_code == 1
     assert "Delete '20260916_1544' first, or pick another name" in res.output
+
+
+def test_snapshot_restore_reopens_on_failure(script_info, app, es_runner, monkeypatch, new_index_name1):
+    """A failed restore must not leave the cluster closed."""
+    current_search_client.indices.create(index=new_index_name1, body={})
+    captured = {}
+    _fake_snapshot_client(monkeypatch, captured, restore_error=RequestError(400, "snapshot_restore_exception", {}))
+
+    res = es_runner.invoke(restore_snapshot, ["tests", "snap", "--yes-i-know"], obj=script_info)
+    assert res.exit_code == 1
+    assert "reopening all indices" in res.output
+    assert captured["open"] == "*"
 
 
 def test_snapshot_restore_deletes_instance_indices(script_info, app, es_runner, monkeypatch):
