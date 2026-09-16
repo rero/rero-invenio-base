@@ -16,6 +16,7 @@
 """Click Celery queue command-line utilities."""
 
 import json
+import sys
 
 import click
 from celery import current_app as celery_app
@@ -101,6 +102,23 @@ def queue_stats(timeout):
     click.secho(json.dumps(stats, indent=2, default=str), fg="green")
 
 
+@queue.command("pending")
+@with_appcontext
+@click.argument("queue_name", default="celery")
+def queue_pending(queue_name):
+    """Display the number of messages still waiting in a queue.
+
+    :param queue_name: name of the queue to inspect (default: celery).
+    """
+    try:
+        with celery_app.pool.acquire(block=True) as conn:
+            count = conn.default_channel.queue_declare(queue_name, passive=True).message_count
+    except Exception as err:
+        click.secho(f"Error: {err}", fg="red")
+        sys.exit(1)
+    click.secho(f"{queue_name}: {count} pending task(s).", fg="yellow" if count else "green")
+
+
 @queue.command("purge")
 @with_appcontext
 @click.argument("queue_name", default="celery")
@@ -122,3 +140,4 @@ def queue_purge(queue_name):
         click.secho(f"Purged {n} task(s) from '{queue_name}'.", fg="yellow")
     except Exception as err:
         click.secho(f"Error: {err}", fg="red")
+        sys.exit(1)
