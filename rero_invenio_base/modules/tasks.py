@@ -56,8 +56,8 @@ def run_on_worker(code, fname=None, *args, **kwargs):
     # execute the compiled code
     if not fname:
         return exec(compiled)
-    # if a given function name is given, execute this function with the given
-    # parameters
-    functions = {}
-    exec(compiled, {}, functions)
-    return functions[fname](*args, **kwargs)
+    # a single namespace serves as globals and locals, so that a function of
+    # the given code can call the others it defines.
+    namespace = {}
+    exec(compiled, namespace)
+    return namespace[fname](*args, **kwargs)

@@ -33,3 +33,17 @@ def display(msg='foo'):
     code = 'print(")'
     with pytest.raises(SyntaxError):
         run_on_worker(code)
+
+
+def test_tasks_calling_a_sibling_function(capsys):
+    """A function of the given code can call the others it defines."""
+    code = """
+def greet():
+    return "hello"
+
+
+def display():
+    print(greet())
+    """
+    run_on_worker(code, "display")
+    assert capsys.readouterr().out == "hello\n"
