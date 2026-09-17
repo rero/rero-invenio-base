@@ -3,6 +3,7 @@
 
 """Test cli elasticsearch commands."""
 
+import re
 import sys
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -380,11 +381,26 @@ def test_snapshot_create_prefixed_indices(script_info, app, es_runner, monkeypat
     captured = {}
     _fake_snapshot_client(monkeypatch, captured)
 
-    res = es_runner.invoke(create_snapshot, ["tests"], obj=script_info)
+    res = es_runner.invoke(create_snapshot, ["tests", "--name", "20260917_0900"], obj=script_info)
     assert res.exit_code == 0
-    assert "Snapshotting 1 indices matching 'records-*'." in res.output
+    assert "Snapshot '20260917_0900': 1 indices matching 'records-*'." in res.output
     assert captured["create"]["body"] == {"indices": "records-*", "include_global_state": True}
     assert captured["create"]["request_timeout"] is None
+
+
+def test_snapshot_create_names_the_snapshot_it_started(script_info, app, es_runner, monkeypatch, new_index_name1):
+    """Without --wait the name must still be reported, the CLI invents it."""
+    current_search_client.indices.create(index=new_index_name1, body={})
+    _fake_snapshot_client(monkeypatch, {})
+
+    res = es_runner.invoke(create_snapshot, ["tests"], obj=script_info)
+    assert res.exit_code == 0
+    started = next(line for line in res.output.splitlines() if "started" in line)
+    assert re.fullmatch(
+        r"Snapshot '(\d{4}\.\d{2}\.\d{2}_\d{2}:\d{2}:\d{2})' started\. "
+        r"Follow it with: snapshot list tests -n \1",
+        started,
+    )
 
 
 def test_snapshot_create_wait_raises_the_read_timeout(script_info, app, es_runner, monkeypatch, new_index_name1):

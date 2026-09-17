@@ -138,15 +138,14 @@ def list_snapshot(repository, name, names_only):
 def create_snapshot(repository, name, indices, global_state, wait):
     """Create a snapshot of all indices of this instance.
 
-    Aborts when the pattern matches nothing, rather than writing an empty
-    snapshot.
+    Aborts when the pattern matches nothing, rather than writing an empty snapshot.
     """
     indices = indices or _instance_indices()
     found = sorted(idx["index"] for idx in current_search_client.cat.indices(index=indices, h="index", format="json"))
     if not found:
         click.secho(f"No index matches '{indices}'. Aborting.", fg="red")
         sys.exit(1)
-    click.secho(f"Snapshotting {len(found)} indices matching '{indices}'.", fg="green")
+    click.secho(f"Snapshot '{name}': {len(found)} indices matching '{indices}'.", fg="green")
     try:
         res = current_search_client.snapshot.create(
             repository,
@@ -168,6 +167,7 @@ def create_snapshot(repository, name, indices, global_state, wait):
             click.echo(f"Shards:    {shards_str}")
         else:
             _print_response(res)
+            click.secho(f"Snapshot '{name}' started. Follow it with: snapshot list {repository} -n {name}", fg="green")
     except Exception as err:
         click.secho(f"ERROR SNAPSHOT: {err}", fg="red")
         if getattr(err, "error", None) == "invalid_snapshot_name_exception":
