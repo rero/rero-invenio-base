@@ -16,7 +16,7 @@ from ...shared import abort_if_false
 
 @click.group()
 def repository():
-    """SEARCH snapshot repository commands."""
+    """Search snapshot repository commands."""
 
 
 @repository.command("list")
@@ -42,7 +42,7 @@ def create_repository(repository, location, compress):
     """Create a shared filesystem snapshot repository.
 
     The repository is registered at LOCATION/REPOSITORY on the filesystem.
-    The path must be accessible from all SEARCH nodes (e.g. an NFS mount).
+    The path must be accessible from all Search nodes (e.g. an NFS mount).
     """
     try:
         snapshot_body = {

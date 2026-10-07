@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 from click.testing import CliRunner
 
-from rero_invenio_base.cli.es.queue import queue_pending
+from rero_invenio_base.cli.search.queue import queue_pending
 
 
 def _fake_pool(monkeypatch, message_count=None, error=None):

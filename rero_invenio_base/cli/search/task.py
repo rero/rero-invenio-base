@@ -8,8 +8,8 @@ from pprint import pformat
 from time import sleep
 
 import click
-from elasticsearch import NotFoundError
 from invenio_search import current_search_client
+from opensearchpy.exceptions import NotFoundError
 
 try:
     from invenio_search.cli import es_version_check
@@ -25,7 +25,7 @@ from ..shared import abort_if_false
 def task():
     """Search task commands.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/tasks.html
+    See: https://opensearch.org/docs/latest/api-reference/tasks/
     """
 
 
@@ -94,6 +94,7 @@ def task_watch(task, interval):
     """Watch task info.
 
     :param task: task id.
+    :param interval: seconds to wait between updates.
     """
     click.secho(f"Watching task: {task}", fg="green")
     seconds = 0
