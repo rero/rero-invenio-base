@@ -7,6 +7,50 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v1.4.0 (2026-10-15)
+
+### Bug Fixes
+
+- **es**: Correct the index and snapshot commands
+  ([`b685a3d`](https://github.com/rero/rero-invenio-base/commit/b685a3d14728fb8fc7c3e71e206b7da9ce10fcf2))
+
+- **es**: Keep the source of an unwatched reindex
+  ([`4d8863f`](https://github.com/rero/rero-invenio-base/commit/4d8863f111ba69ff2c1e000a63b87ea2b719538f))
+
+- **es**: Reopen the indices when a restore fails
+  ([`7ec19ee`](https://github.com/rero/rero-invenio-base/commit/7ec19eef5927172592e9a76adf63e5bd7e2737ff))
+
+- **export**: Keep the wall clock of XLSX dates
+  ([`eae425b`](https://github.com/rero/rero-invenio-base/commit/eae425ba0f99c95806e29f5c6e89dd5991a8f5fb))
+
+- **tasks**: Run the worker code in one namespace
+  ([`b89a9bb`](https://github.com/rero/rero-invenio-base/commit/b89a9bb1e93b1e0a414829c82946e54a62c86a77))
+
+### Build System
+
+- **deps**: Refresh the dependency lock
+  ([`a4ce75f`](https://github.com/rero/rero-invenio-base/commit/a4ce75f7fd20900cc38c24f906109b192d9056f9))
+
+- **deps**: Refresh the lock and audit exceptions
+  ([`3f25017`](https://github.com/rero/rero-invenio-base/commit/3f250178bc60ed425183a5793821e1b78413fa9b))
+
+- **deps**: Run python-semantic-release through uvx
+  ([`ee82149`](https://github.com/rero/rero-invenio-base/commit/ee8214922e24afae7fbd00b70d1dd0f5df3b8ed2))
+
+### Documentation
+
+- Add Claude commit and review capabilities
+  ([`4332780`](https://github.com/rero/rero-invenio-base/commit/43327802fbaacc7e1a5cd9813bc6439701c9e30f))
+
+### Features
+
+- **cli**: Add a queue pending command
+  ([`9370ea0`](https://github.com/rero/rero-invenio-base/commit/9370ea0c456b84d61b8388f686465f49b0cd9f51))
+
+- **es**: Name the snapshot that was created
+  ([`5aba35a`](https://github.com/rero/rero-invenio-base/commit/5aba35a54f6cb99a45d44a0b06074e77bb2b1e0d))
+
+
 ## v1.3.0 (2026-08-27)
 
 ### Features
