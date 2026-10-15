@@ -33,8 +33,27 @@ def new_index_name2():
 
 
 @pytest.fixture(scope="function")
-def es_runner(app, es, new_index_name1, new_index_name2):
-    """Create and remove indexes into es."""
+def snapshot_repository(app, search, tmp_path):
+    """Register a filesystem snapshot repository in a per-test location.
+
+    ``path.repo`` is a static node setting and cannot be created from a test, so
+    docker-services.yml points it at a directory inside the container. The
+    location registered here is *relative* to it, which keeps the repository
+    host-OS independent; ``tmp_path`` only supplies a name unique to this test.
+
+    :returns: name of the registered repository.
+    """
+    name = "tests"
+    current_search_client.snapshot.create_repository(
+        name, body={"type": "fs", "settings": {"location": tmp_path.name, "compress": False}}
+    )
+    yield name
+    current_search_client.snapshot.delete_repository(name, ignore=[404])
+
+
+@pytest.fixture(scope="function")
+def es_runner(app, search, new_index_name1, new_index_name2):
+    """Create and remove indexes into search."""
     for i in [new_index_name1, new_index_name2]:
         current_search_client.indices.delete(
             index=i,
@@ -78,7 +97,7 @@ def create_app(instance_path):
 
 
 @pytest.fixture
-def rebuild_runner(app, es):
+def rebuild_runner(app, search):
     """Runner for rebuild_index tests; cleans up all records-* indices."""
     current_search_client.indices.delete(index="records-*", ignore_unavailable=True)
     search = app.extensions["invenio-search"]
