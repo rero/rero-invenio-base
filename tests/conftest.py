@@ -8,6 +8,7 @@ fixtures are available.
 """
 
 import copy
+from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
@@ -34,19 +35,20 @@ def new_index_name2():
 
 
 @pytest.fixture(scope="function")
-def snapshot_repository(app, search, tmp_path):
-    """Register a filesystem snapshot repository in a per-test location.
+def snapshot_repository(app, search):
+    """Register a filesystem snapshot repository in a location of its own.
 
     ``path.repo`` is a static node setting and cannot be created from a test, so
     docker-services.yml points it at a directory inside the container. The
     location registered here is *relative* to it, which keeps the repository
-    host-OS independent; ``tmp_path`` only supplies a name unique to this test.
+    host-OS independent. It is random: a container kept between two runs still
+    holds the snapshots of the first, which a reused name would find again.
 
     :returns: name of the registered repository.
     """
     name = "tests"
     current_search_client.snapshot.create_repository(
-        name, body={"type": "fs", "settings": {"location": tmp_path.name, "compress": False}}
+        name, body={"type": "fs", "settings": {"location": uuid4().hex, "compress": False}}
     )
     yield name
     current_search_client.snapshot.delete_repository(name, ignore=[404])

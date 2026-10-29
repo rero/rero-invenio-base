@@ -5,6 +5,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 from opensearchpy.exceptions import NotFoundError
 
 from rero_invenio_base.cli.search.task import task_cancel, task_get, task_list, task_watch
@@ -97,12 +98,28 @@ def test_cli_search_task_watch_error(app, search_runner):
         assert res.exit_code == 1
 
 
-def test_cli_search_task_watch_finished_task(app, search_runner):
-    """A task gone from the task list has completed, it is not an error."""
-    runner = search_runner
-
+def test_cli_search_task_watch_missing_task(app, search_runner):
+    """A finished task stays retrievable, so a missing one is an error."""
     with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
         mock_client.tasks.get = MagicMock(side_effect=NotFoundError(404, "resource_not_found_exception", {}))
-        res = runner.invoke(task_watch, ["node:1"], obj=app)
-        assert res.exit_code == 0
-        assert "Finished task: node:1" in res.output
+        res = search_runner.invoke(task_watch, ["node:1"], obj=app)
+        assert res.exit_code == 1
+        assert "Error:" in res.output
+        assert "Finished task" not in res.output
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"completed": True, "response": {"failures": ["boom"]}},
+        {"completed": True, "error": {"type": "search_phase_execution_exception"}},
+    ],
+    ids=["failures", "error"],
+)
+def test_cli_search_task_watch_failed_task(app, search_runner, response):
+    """A completed task reporting failures or an error exits 1."""
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(return_value=response)
+        res = search_runner.invoke(task_watch, ["node:1"], obj=app)
+        assert res.exit_code == 1
+        assert "Failed task: node:1" in res.output
