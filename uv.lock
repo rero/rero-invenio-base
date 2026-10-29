@@ -1630,12 +1630,14 @@ version = "1.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "babel" },
+    { name = "celery" },
     { name = "invenio-db", extra = ["postgresql"] },
     { name = "invenio-i18n" },
+    { name = "invenio-pidstore" },
     { name = "invenio-records-rest" },
+    { name = "invenio-rest" },
     { name = "invenio-search", extra = ["opensearch2"] },
     { name = "jsonpatch" },
-    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1650,17 +1652,19 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "babel", specifier = ">=2.16.0" },
+    { name = "celery", specifier = ">=5.1.0" },
     { name = "invenio-db", extras = ["postgresql"], specifier = ">=1.1.0" },
     { name = "invenio-i18n", specifier = ">=3.4.2" },
+    { name = "invenio-pidstore", specifier = ">=1.2.1" },
     { name = "invenio-records-rest", specifier = ">=2.2.0" },
+    { name = "invenio-rest", specifier = ">=1.2.4" },
     { name = "invenio-search", extras = ["opensearch2"], specifier = ">=2.1.0" },
-    { name = "jsonpatch", specifier = "<=2.0.0" },
-    { name = "pyyaml", specifier = "<=7.0.0" },
+    { name = "jsonpatch", specifier = "<2.0.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "docker-services-cli", specifier = "<=1.0.0" },
+    { name = "docker-services-cli", specifier = "<1.0.0" },
     { name = "pip-audit", specifier = ">=2.8.0" },
     { name = "poethepoet", specifier = ">=0.36.0" },
     { name = "pytest-invenio", specifier = ">=2.1.6" },
