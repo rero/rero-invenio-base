@@ -8,30 +8,32 @@ from pprint import pformat
 from time import sleep
 
 import click
-from elasticsearch import NotFoundError
 from invenio_search import current_search_client
-
-try:
-    from invenio_search.cli import es_version_check
-except ImportError:
-    from invenio_search.cli import search_version_check as es_version_check
-
-from invenio_search.cli import with_appcontext
+from invenio_search.cli import search_version_check, with_appcontext
 
 from ..shared import abort_if_false
+
+
+def task_failure(res):
+    """Return what made a completed task fail: its error, or its failures.
+
+    :param res: the response of the task API for a completed task.
+    :returns: the error or the failures, None if the task succeeded.
+    """
+    return res.get("error") or res.get("response", {}).get("failures") or None
 
 
 @click.group()
 def task():
     """Search task commands.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/tasks.html
+    See: https://opensearch.org/docs/latest/api-reference/tasks/
     """
 
 
 @task.command("get")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("task")
 def task_get(task):
     """Get task info.
@@ -54,7 +56,7 @@ def task_get(task):
 
 @task.command("list")
 @with_appcontext
-@es_version_check
+@search_version_check
 def task_list():
     """Get task list."""
     res = current_search_client.tasks.list()
@@ -71,7 +73,7 @@ def task_list():
     prompt="Do you really want to cancel the task?",
 )
 @click.argument("task")
-@es_version_check
+@search_version_check
 def task_cancel(task):
     """Cancel task.
 
@@ -87,13 +89,17 @@ def task_cancel(task):
 
 @task.command("watch")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("task")
 @click.option("-n", "--interval", default=1, type=int, help="seconds to wait between updates")
 def task_watch(task, interval):
     """Watch task info.
 
+    Exits 1 when the task fails, or when it cannot be found: a finished task
+    stays retrievable, so a missing one has an unknown outcome.
+
     :param task: task id.
+    :param interval: seconds to wait between updates.
     """
     click.secho(f"Watching task: {task}", fg="green")
     seconds = 0
@@ -108,11 +114,12 @@ def task_watch(task, interval):
             seconds += interval
             res = current_search_client.tasks.get(task)
 
+        if failure := task_failure(res):
+            click.secho(f"Failed task: {task} {seconds} seconds ...", fg="red")
+            click.secho(f"{pformat(failure)}", fg="red")
+            sys.exit(1)
         click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
         click.secho(f"{pformat(res.get('response'))}", fg="green")
-    except NotFoundError:
-        # a completed task is dropped from the task list: that is a success.
-        click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
     except Exception as err:
         click.secho(f"Error: {err}", fg="red")
         sys.exit(1)

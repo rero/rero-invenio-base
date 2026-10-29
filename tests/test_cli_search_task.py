@@ -1,0 +1,125 @@
+# SPDX-FileCopyrightText: Fondation RERO+
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""Test cli search task commands."""
+
+from unittest.mock import MagicMock, patch
+
+import pytest
+from opensearchpy.exceptions import NotFoundError
+
+from rero_invenio_base.cli.search.task import task_cancel, task_get, task_list, task_watch
+
+
+def test_cli_search_task_list(app, search_runner):
+    """Test task list command."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.list = MagicMock(return_value={"nodes": {}})
+        res = runner.invoke(task_list, [], obj=app)
+        assert res.exit_code == 0
+
+
+def test_cli_search_task_get_with_response(app, search_runner):
+    """Test task get command with response."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(return_value={"response": {"acknowledged": True}})
+        res = runner.invoke(task_get, ["test_task_id"], obj=app)
+        assert res.exit_code == 0
+
+
+def test_cli_search_task_get_with_task_info(app, search_runner):
+    """Test task get command with task info."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(return_value={"task": {"description": "reindex", "status": {"created": 100}}})
+        res = runner.invoke(task_get, ["test_task_id"], obj=app)
+        assert res.exit_code == 0
+
+
+def test_cli_search_task_get_error(app, search_runner):
+    """Test task get command with error."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(side_effect=Exception("Task not found"))
+        res = runner.invoke(task_get, ["invalid_task"], obj=app)
+        assert res.exit_code == 1
+
+
+def test_cli_search_task_cancel(app, search_runner):
+    """Test task cancel command."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.cancel = MagicMock(return_value={"nodes": {}})
+        res = runner.invoke(task_cancel, ["test_task", "--yes-i-know"], obj=app)
+        assert res.exit_code == 0
+
+
+def test_cli_search_task_cancel_error(app, search_runner):
+    """Test task cancel command with error."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.cancel = MagicMock(side_effect=Exception("Cannot cancel task"))
+        res = runner.invoke(task_cancel, ["test_task", "--yes-i-know"], obj=app)
+        assert res.exit_code == 1
+
+
+def test_cli_search_task_watch(app, search_runner):
+    """Test task watch command."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        # First call: task running, second call: task completed
+        mock_client.tasks.get = MagicMock(
+            side_effect=[
+                {"completed": False, "task": {"description": "reindex", "status": {"created": 50}}},
+                {"completed": True, "response": {"created": 100}},
+            ]
+        )
+        with patch("rero_invenio_base.cli.search.task.sleep"):
+            res = runner.invoke(task_watch, ["test_task", "-n", "0"], obj=app)
+            assert res.exit_code == 0
+
+
+def test_cli_search_task_watch_error(app, search_runner):
+    """Test task watch command with error."""
+    runner = search_runner
+
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(side_effect=Exception("Task error"))
+        res = runner.invoke(task_watch, ["test_task"], obj=app)
+        assert res.exit_code == 1
+
+
+def test_cli_search_task_watch_missing_task(app, search_runner):
+    """A finished task stays retrievable, so a missing one is an error."""
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(side_effect=NotFoundError(404, "resource_not_found_exception", {}))
+        res = search_runner.invoke(task_watch, ["node:1"], obj=app)
+        assert res.exit_code == 1
+        assert "Error:" in res.output
+        assert "Finished task" not in res.output
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"completed": True, "response": {"failures": ["boom"]}},
+        {"completed": True, "error": {"type": "search_phase_execution_exception"}},
+    ],
+    ids=["failures", "error"],
+)
+def test_cli_search_task_watch_failed_task(app, search_runner, response):
+    """A completed task reporting failures or an error exits 1."""
+    with patch("rero_invenio_base.cli.search.task.current_search_client") as mock_client:
+        mock_client.tasks.get = MagicMock(return_value=response)
+        res = search_runner.invoke(task_watch, ["node:1"], obj=app)
+        assert res.exit_code == 1
+        assert "Failed task: node:1" in res.output

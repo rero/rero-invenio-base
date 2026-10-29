@@ -10,16 +10,44 @@ from datetime import UTC, datetime
 from pprint import pformat
 
 import click
-from elasticsearch import NotFoundError, RequestError, TransportError
 from invenio_search import current_search, current_search_client
-
-try:
-    from invenio_search.cli import es_version_check
-except ImportError:
-    from invenio_search.cli import search_version_check as es_version_check
-
-from invenio_search.cli import with_appcontext
+from invenio_search.cli import search_version_check, with_appcontext
 from jsonpatch import make_patch
+from opensearch_dsl import Index
+from opensearchpy.exceptions import NotFoundError, OpenSearchException, RequestError, TransportError
+
+from .task import task_failure
+
+
+def _exit_unknown_resources(resources):
+    """Report resources that have no registered mapping and exit 1.
+
+    :param resources: names of the unknown resources.
+    """
+    click.secho(f"Unknown resource(s): {', '.join(resources)}.", fg="red")
+    click.secho(f"Available: {', '.join(sorted(current_search.aliases))}", fg="yellow")
+    sys.exit(1)
+
+
+def _resource_mapping(resource):
+    """Return the single index name and mapping file registered for a resource.
+
+    Exits 1 when the resource is unknown, or when it groups several mappings,
+    since a single new index cannot hold them all.
+
+    :param resource: alias name, e.g. 'documents'.
+    :returns: tuple of the registered index name and its mapping file path.
+    """
+    if not (mappings := current_search.aliases.get(resource)):
+        _exit_unknown_resources([resource])
+    if len(mappings) > 1:
+        click.secho(
+            f"Resource '{resource}' has several mappings ({', '.join(sorted(mappings))}): "
+            "use a resource with a single one.",
+            fg="red",
+        )
+        sys.exit(1)
+    return next(iter(mappings.items()))
 
 
 def _create_index(index_name, f_mapping, exit_code=1):
@@ -47,22 +75,22 @@ def _watch_reindex_task(task, interval, verbose):
     :param task: task id returned by the reindex API.
     :param interval: seconds to wait between two status polls.
     :param verbose: print task progress on each poll.
-    :returns: True on success, False if the task reported failures.
+    :returns: True on success, False if the task failed or its outcome cannot be read.
     """
     count = 0
     while True:
         try:
             res = current_search_client.tasks.get(task)
-        except NotFoundError:
-            if verbose:
-                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
-            return True
+        except NotFoundError as err:
+            # a finished task stays retrievable, so a missing one has an
+            # unknown outcome: never take it for a success.
+            click.secho(f"ERROR REINDEX: task {task} not found: {err}", fg="red")
+            return False
         except RequestError as err:
             if err.error != "index_closed_exception":
                 raise
-            if verbose:
-                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
-            return True
+            click.secho(f"ERROR REINDEX: task {task} cannot be read, the tasks index is closed.", fg="red")
+            return False
         if res.get("completed"):
             break
         if verbose:
@@ -75,8 +103,8 @@ def _watch_reindex_task(task, interval, verbose):
     if verbose:
         click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
         click.secho(f"{pformat(res.get('response'))}", fg="yellow")
-    if failures := res.get("response", {}).get("failures"):
-        click.secho(f"ERROR REINDEX: {failures}", fg="red")
+    if failure := task_failure(res):
+        click.secho(f"ERROR REINDEX: {failure}", fg="red")
         return False
     return True
 
@@ -106,18 +134,27 @@ def _do_reindex(src, dest, interval, verbose, label="Task"):
 
 
 def _switch_aliases(from_index, to_index):
-    """Move all aliases from one index to another.
+    """Move all aliases from one index to another in a single atomic request.
+
+    Searches never see the alias on both indices or on none, and each alias
+    keeps its properties: filter, routing and write index.
 
     :param from_index: index that currently holds the aliases.
     :param to_index: index that should receive the aliases.
     :returns: list of alias names that were moved.
     """
-    aliases = list(current_search_client.indices.get_alias().get(from_index, {}).get("aliases", {}).keys())
+    aliases = current_search_client.indices.get_alias(index=from_index).get(from_index, {}).get("aliases", {})
+    actions = []
+    for alias, properties in aliases.items():
+        actions += [
+            {"remove": {"index": from_index, "alias": alias}},
+            {"add": {"index": to_index, "alias": alias, **properties}},
+        ]
+    if actions:
+        current_search_client.indices.update_aliases(body={"actions": actions})
     for alias in aliases:
-        current_search_client.indices.put_alias(to_index, alias)
-        current_search_client.indices.delete_alias(from_index, alias)
         click.secho(f"Alias '{alias}' → {to_index}.", fg="green")
-    return aliases
+    return list(aliases)
 
 
 def _update_templates(verbose, templates):
@@ -144,63 +181,58 @@ def index():
 
 @index.command("reindex")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("source")
 @click.argument("destination")
 def reindex(source, destination):
     """Reindex from source.
 
-    See: https://www.elastic.co/guide/en/elasticsearch/reference/7.10/docs-reindex.html
+    :param source: source index name
+    :param destination: destination index name
+
+    See: https://opensearch.org/docs/latest/api-reference/document-apis/reindex/
     """
-    res = current_search_client.reindex(
-        body={
-            "source": {"index": source},
-            "dest": {"index": destination, "version_type": "external_gte"},
-        },
-        wait_for_completion=False,
-    )
-    click.secho(f"Task: {res['task']}", fg="green")
+    _do_reindex(source, destination, interval=0, verbose=False)
 
 
 @index.command("open")
 @with_appcontext
 @click.option("-i", "--index", help="default=_all", default="*")
 def open_index(index):
-    """Open Search index."""
+    """Open Search index.
+
+    :param index: index name or pattern
+    """
     try:
-        click.secho(
-            json.dumps(
-                current_search_client.indices.open(index=index, allow_no_indices=True, ignore_unavailable=True),
-                indent=2,
-            ),
-            fg="green",
-        )
-    except Exception as err:
+        i = Index(index, using=current_search_client)
+        click.secho(json.dumps(i.open(), indent=2), fg="green")
+    except (OpenSearchException, TransportError) as err:
         click.secho(str(err), fg="red")
         sys.exit(1)
 
 
 @index.command("close")
 @with_appcontext
-@click.option("-i", "--index", help="default=_all", default="*")
+@click.option("-i", "--index", required=True, help="Index name or pattern; '*' closes every index of the cluster.")
 def close_index(index):
-    """Close Search index."""
+    """Close Search index.
+
+    The index is required: closing every index, system ones included, must be
+    asked for explicitly.
+
+    :param index: index name or pattern
+    """
     try:
-        click.secho(
-            json.dumps(
-                current_search_client.indices.close(index=index, allow_no_indices=True, ignore_unavailable=True),
-                indent=2,
-            ),
-            fg="green",
-        )
-    except Exception as err:
+        i = Index(index, using=current_search_client)
+        click.secho(json.dumps(i.close(), indent=2), fg="green")
+    except (OpenSearchException, TransportError) as err:
         click.secho(str(err), fg="red")
         sys.exit(1)
 
 
 @index.command("switch")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("old")
 @click.argument("new")
 def switch_index(old, new):
@@ -219,7 +251,7 @@ def switch_index(old, new):
 
 @index.command("create")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
 @click.argument("resource")
@@ -230,10 +262,10 @@ def create_index(resource, index, verbose, templates):
     :param resource: the resource such as documents.
     :param index: the index name such as documents-document-v0.0.1-20211014
     :param verbose: display additional message.
-    :param templates: update also the es templates.
+    :param templates: update also the Search templates.
     """
+    _, f_mapping = _resource_mapping(resource)
     _update_templates(verbose, templates)
-    f_mapping = list(current_search.aliases.get(resource).values()).pop()
     _create_index(index, f_mapping)
 
 
@@ -242,30 +274,47 @@ def create_index(resource, index, verbose, templates):
 @click.option("-s", "--settings/--no-settings", "settings", is_flag=True, default=False)
 @with_appcontext
 def update_mapping(aliases, settings):
-    """Update the mapping of a given alias."""
+    """Update the mapping of a given alias.
+
+    Every index is attempted; the command exits 1 if any of them failed.
+
+    :param aliases: list of alias names to update
+    :param settings: whether to update settings
+    """
     if not aliases:
         aliases = current_search.aliases.keys()
+    elif unknown := [alias for alias in aliases if alias not in current_search.aliases]:
+        _exit_unknown_resources(unknown)
+    failed = False
     for alias in aliases:
         for index, f_mapping in iter(current_search.aliases.get(alias).items()):
             with open(f_mapping) as mapping_file:
                 mapping = json.load(mapping_file)
                 try:
                     if mapping.get("settings") and settings:
+                        # static settings can only change on a closed index; reopen
+                        # it even if they are refused, rather than leave it offline.
                         current_search_client.indices.close(index=index)
-                        current_search_client.indices.put_settings(body=mapping.get("settings"), index=index)
-                        current_search_client.indices.open(index=index)
+                        try:
+                            current_search_client.indices.put_settings(body=mapping.get("settings"), index=index)
+                        finally:
+                            current_search_client.indices.open(index=index)
                     if res := current_search_client.indices.put_mapping(body=mapping.get("mappings"), index=index):
                         if res.get("acknowledged"):
                             click.secho(f"index: {index} has been successfully updated", fg="green")
                         else:
                             click.secho(f"error: {index}: {res}", fg="red")
+                            failed = True
                 except TransportError as err:
                     click.secho(f"error: {index}: {err}", fg="red")
+                    failed = True
+    if failed:
+        sys.exit(1)
 
 
 @index.command("move")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("resource")
 @click.argument("old")
 @click.argument("new")
@@ -279,11 +328,11 @@ def move_index(resource, old, new, templates, verbose, interval):
     :param old: full name of the old index
     :param new: full name of the fresh created index
     :param verbose: display additional message.
-    :param templates: update also the es templates.
+    :param templates: update also the Search templates.
     """
+    _, f_mapping = _resource_mapping(resource)
     try:
         _update_templates(verbose, templates)
-        f_mapping = list(current_search.aliases.get(resource).values()).pop()
     except Exception as err:
         click.secho(f"ERROR CREATE: {err}", fg="red")
         sys.exit(1)
@@ -353,7 +402,7 @@ def _reindex_pass(src, dest, interval, verbose, label, src_label, dest_label, co
 
 @index.command("rebuild")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("resource")
 @click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
@@ -385,13 +434,7 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
     :param name: explicit destination index name; defaults to registered name + today's date.
     :param inplace: evacuate the current index to a temp before migrating to new_index.
     """
-    alias_map = current_search.aliases.get(resource)
-    if not alias_map:
-        click.secho(f"Unknown resource: '{resource}'.", fg="red")
-        click.secho(f"Available: {', '.join(sorted(current_search.aliases))}", fg="yellow")
-        sys.exit(1)
-
-    registered_index, f_mapping = next(iter(alias_map.items()))
+    registered_index, f_mapping = _resource_mapping(resource)
     new_index = name or f"{registered_index}-{datetime.now(UTC).strftime('%Y%m%d')}"
 
     try:
@@ -475,10 +518,20 @@ def rebuild_index(resource, templates, verbose, interval, name, inplace):
 @click.option("-s", "--settings", is_flag=True, default=False, help="Display settings.")
 @with_appcontext
 def info(index, aliases, mappings, settings):
-    """List indices of given alias."""
+    """List indices of given alias.
+
+    :param index: index name or pattern
+    :param aliases: whether to display aliases
+    :param mappings: whether to display mappings
+    :param settings: whether to display settings
+    """
 
     def print_info(name, data):
-        """Display additional info."""
+        """Display additional info.
+
+        :param name: information field name
+        :param data: index data dictionary
+        """
         msg = pformat(data.get(name))
         click.secho(f"{name}:", fg="yellow")
         click.secho(f"{msg}", fg="yellow")

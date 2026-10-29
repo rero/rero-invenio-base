@@ -8,11 +8,13 @@ fixtures are available.
 """
 
 import copy
+from uuid import uuid4
 
 import pytest
 from click.testing import CliRunner
 from flask import Flask
 from invenio_db import InvenioDB
+from invenio_pidstore import InvenioPIDStore
 from invenio_records_rest import config as _config
 from invenio_search import InvenioSearch, current_search_client
 
@@ -33,8 +35,28 @@ def new_index_name2():
 
 
 @pytest.fixture(scope="function")
-def es_runner(app, es, new_index_name1, new_index_name2):
-    """Create and remove indexes into es."""
+def snapshot_repository(app, search):
+    """Register a filesystem snapshot repository in a location of its own.
+
+    ``path.repo`` is a static node setting and cannot be created from a test, so
+    docker-services.yml points it at a directory inside the container. The
+    location registered here is *relative* to it, which keeps the repository
+    host-OS independent. It is random: a container kept between two runs still
+    holds the snapshots of the first, which a reused name would find again.
+
+    :returns: name of the registered repository.
+    """
+    name = "tests"
+    current_search_client.snapshot.create_repository(
+        name, body={"type": "fs", "settings": {"location": uuid4().hex, "compress": False}}
+    )
+    yield name
+    current_search_client.snapshot.delete_repository(name, ignore=[404])
+
+
+@pytest.fixture(scope="function")
+def search_runner(app, search, new_index_name1, new_index_name2):
+    """Create and remove indexes into search."""
     for i in [new_index_name1, new_index_name2]:
         current_search_client.indices.delete(
             index=i,
@@ -71,6 +93,7 @@ def create_app(instance_path):
         REROInvenioBase(app)
         ReroInvenioBaseExportApp(app)
         InvenioDB(app)
+        InvenioPIDStore(app)
         InvenioSearch(app)
         return app
 
@@ -78,7 +101,7 @@ def create_app(instance_path):
 
 
 @pytest.fixture
-def rebuild_runner(app, es):
+def rebuild_runner(app, search):
     """Runner for rebuild_index tests; cleans up all records-* indices."""
     current_search_client.indices.delete(index="records-*", ignore_unavailable=True)
     search = app.extensions["invenio-search"]

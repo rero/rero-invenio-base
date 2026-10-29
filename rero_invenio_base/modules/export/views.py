@@ -8,7 +8,7 @@ from functools import partial
 
 from flask import Blueprint
 from invenio_pidstore import current_pidstore
-from invenio_records_rest.query import es_search_factory
+from invenio_records_rest.query import default_search_factory
 from invenio_records_rest.utils import obj_or_import_string
 from invenio_records_rest.views import need_record_permission
 from invenio_rest import ContentNegotiatedMethodView
@@ -81,7 +81,7 @@ def create_export_url_route(
         search_class=search_class,
         search_serializers=search_serializers,
         serializers_query_aliases=search_serializers_aliases,
-        search_factory=obj_or_import_string(search_factory_imp, default=es_search_factory),
+        search_factory=obj_or_import_string(search_factory_imp, default=default_search_factory),
     )
     return {"rule": list_route, "view_func": export_view}
 
@@ -100,7 +100,20 @@ class ExportResource(ContentNegotiatedMethodView):
         serializers_query_aliases=None,
         **kwargs,
     ):
-        """Init magic method."""
+        """Initialize the export resource view.
+
+        Sets up content negotiation, serializers, and search configuration
+        for streaming record exports.
+
+        :param default_media_type: Default MIME type for responses
+        :param permission_factory: Factory for permission checking
+        :param pid_fetcher: PID fetcher name
+        :param search_class: Search class to use
+        :param search_factory: Factory for search object creation
+        :param search_serializers: Dictionary of MIME types to serializers
+        :param serializers_query_aliases: Query parameter aliases for format selection
+        :param kwargs: Additional arguments passed to parent class
+        """
         serializers = {
             mime: obj_or_import_string(search_obj) for mime, search_obj in (search_serializers or {}).items()
         }
@@ -119,8 +132,7 @@ class ExportResource(ContentNegotiatedMethodView):
     @need_record_permission("permission_factory")
     def get(self, **kwargs):
         """Implement GET /export/{resource_list_name}."""
-        search_obj = self.search_class()
-        search = search_obj.with_preference_param().params(version=True)
+        search = self.search_class().with_preference_param().params(version=True)
         search, _ = self.search_factory(search)
 
-        return self.make_response(pid_fetcher=None, search_result=search.scan())
+        return self.make_response(pid_fetcher=self.pid_fetcher, search_result=search.scan())
