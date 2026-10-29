@@ -1,0 +1,31 @@
+name: Dev dependencies
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+      with:
+        enable-cache: true
+        cache-dependency-glob: uv.lock
+
+    - name: Set up Python
+      run: uv python install 3.14
+
+    - name: Update and install dependencies
+      run: uv sync --upgrade
+
+    - name: Run tests
+      run: uv run poe run_tests
