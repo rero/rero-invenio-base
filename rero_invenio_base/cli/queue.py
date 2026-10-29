@@ -1,17 +1,5 @@
-# RERO Invenio Base
-# Copyright (C) 2025 RERO.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Fondation RERO+
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Click Celery queue command-line utilities."""
 
@@ -22,7 +10,7 @@ import click
 from celery import current_app as celery_app
 from flask.cli import with_appcontext
 
-from ..shared import abort_if_false
+from .shared import abort_if_false
 
 
 @click.group()
