@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click Search command-line utilities."""
+"""Click miscellaneous command-line utilities."""
 
 import json
 import os
@@ -18,7 +18,7 @@ def utils():
 
 
 @utils.command("check_json")
-@click.argument("paths", nargs=-1)
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option(
     "-r",
     "--replace",
@@ -38,7 +38,12 @@ def utils():
 @click.option("-i", "--indent", "indent", type=click.INT, default=2, help="indent default=2")
 @click.option("-v", "--verbose", "verbose", is_flag=True, default=False)
 def check_json(paths, replace, indent, sort_keys, verbose):
-    """Check json files."""
+    """Check the indentation of JSON files.
+
+    PATHS are files, or directories searched recursively for ``*.json`` files;
+    without any, the current directory is searched. Exits 1 when a file is
+    badly indented or invalid.
+    """
     click.secho("Testing JSON indentation.", fg="green")
     files_list = []
     for path in paths:
@@ -53,24 +58,27 @@ def check_json(paths, replace, indent, sort_keys, verbose):
         error_cnt = 0
         try:
             fname = path_file
-            with open(fname) as opened_file:
+            with open(fname, encoding="utf-8") as opened_file:
                 json_orig = opened_file.read().rstrip()
                 opened_file.seek(0)
                 json_file = json.load(opened_file, object_pairs_hook=OrderedDict)
-            json_dump = json.dumps(json_file, indent=indent).rstrip()
-            if json_dump != json_orig:
+            # non-ASCII characters are accepted both escaped and written as is.
+            well_indented = {
+                json.dumps(json_file, indent=indent, ensure_ascii=escaped).rstrip() for escaped in (True, False)
+            }
+            if json_orig not in well_indented:
                 error_cnt = 1
             if replace:
-                with open(fname, "w") as opened_file:
-                    opened_file.write(json.dumps(json_file, indent=indent, sort_keys=sort_keys))
+                with open(fname, "w", encoding="utf-8") as opened_file:
+                    opened_file.write(json.dumps(json_file, indent=indent, sort_keys=sort_keys) + "\n")
                 click.echo(f"{fname}: ", nl=False)
                 click.secho("File replaced", fg="yellow")
-            elif error_cnt == 0 and verbose:
-                click.echo(f"{fname}: ", nl=False)
-                click.secho("Well indented", fg="green")
-            else:
+            elif error_cnt:
                 click.echo(f"{fname}: ", nl=False)
                 click.secho("Bad indentation", fg="red")
+            elif verbose:
+                click.echo(f"{fname}: ", nl=False)
+                click.secho("Well indented", fg="green")
         except ValueError as error:
             click.echo(f"{fname}: ", nl=False)
             click.secho("Invalid JSON", fg="red", nl=False)
@@ -79,7 +87,10 @@ def check_json(paths, replace, indent, sort_keys, verbose):
 
         tot_error_cnt += error_cnt
 
-    sys.exit(tot_error_cnt)
+    # an exit status wraps around at 256, so the count cannot be returned as is.
+    if tot_error_cnt:
+        click.secho(f"{tot_error_cnt} file(s) with errors.", fg="red")
+        sys.exit(1)
 
 
 __all__ = ["utils"]
