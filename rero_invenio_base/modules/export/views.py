@@ -8,7 +8,7 @@ from functools import partial
 
 from flask import Blueprint
 from invenio_pidstore import current_pidstore
-from invenio_records_rest.query import es_search_factory
+from invenio_records_rest.query import default_search_factory
 from invenio_records_rest.utils import obj_or_import_string
 from invenio_records_rest.views import need_record_permission
 from invenio_rest import ContentNegotiatedMethodView
@@ -81,7 +81,7 @@ def create_export_url_route(
         search_class=search_class,
         search_serializers=search_serializers,
         serializers_query_aliases=search_serializers_aliases,
-        search_factory=obj_or_import_string(search_factory_imp, default=es_search_factory),
+        search_factory=obj_or_import_string(search_factory_imp, default=default_search_factory),
     )
     return {"rule": list_route, "view_func": export_view}
 
@@ -135,4 +135,4 @@ class ExportResource(ContentNegotiatedMethodView):
         search = self.search_class().with_preference_param().params(version=True)
         search, _ = self.search_factory(search)
 
-        return self.make_response(pid_fetcher=None, search_result=search.scan())
+        return self.make_response(pid_fetcher=self.pid_fetcher, search_result=search.scan())
