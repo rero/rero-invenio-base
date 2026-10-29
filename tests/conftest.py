@@ -13,6 +13,7 @@ import pytest
 from click.testing import CliRunner
 from flask import Flask
 from invenio_db import InvenioDB
+from invenio_pidstore import InvenioPIDStore
 from invenio_records_rest import config as _config
 from invenio_search import InvenioSearch, current_search_client
 
@@ -90,6 +91,7 @@ def create_app(instance_path):
         REROInvenioBase(app)
         ReroInvenioBaseExportApp(app)
         InvenioDB(app)
+        InvenioPIDStore(app)
         InvenioSearch(app)
         return app
 
