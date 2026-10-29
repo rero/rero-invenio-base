@@ -84,13 +84,37 @@ def test_check_json_missing_path(tmp_path):
     assert "does not exist" in res.output
 
 
+def test_check_json_requires_a_path():
+    """Without a path the command stops, rather than walk the whole current directory."""
+    res = CliRunner().invoke(check_json, [])
+    assert res.exit_code == 2
+    assert "Missing argument 'PATHS...'" in res.output
+
+
 def test_check_json_replace(tmp_path):
-    """--replace rewrites the file with the indentation and a final newline."""
-    path = _write(tmp_path / "bad.json", indent=4)
-    res = CliRunner().invoke(check_json, [path, "--replace", "--indent", "2"])
-    assert "File replaced" in res.output
+    """--replace rewrites only the bad files, which then no longer count as errors."""
+    good = tmp_path / "good.json"
+    good.write_text(json.dumps(DATA, indent=2, ensure_ascii=False))  # well indented, no final newline
+    bad = _write(tmp_path / "bad.json", indent=4)
+    res = CliRunner().invoke(check_json, [str(tmp_path), "--replace", "--indent", "2"])
+    assert res.exit_code == 0, res.output
+    assert f"{bad}: File replaced" in res.output
+    assert str(good) not in res.output
     assert (tmp_path / "bad.json").read_text() == json.dumps(DATA, indent=2) + "\n"
-    assert CliRunner().invoke(check_json, [path]).exit_code == 0
+    assert good.read_text() == json.dumps(DATA, indent=2, ensure_ascii=False)
+
+
+def test_check_json_sort_keys(tmp_path):
+    """--sort-keys checks the key order, and --replace sorts the keys."""
+    path = tmp_path / "unsorted.json"
+    path.write_text(json.dumps({"b": 1, "a": 2}, indent=2) + "\n")
+    assert CliRunner().invoke(check_json, [str(path)]).exit_code == 0
+    res = CliRunner().invoke(check_json, [str(path), "--sort-keys"])
+    assert res.exit_code == 1
+    assert f"{path}: Bad indentation or key order" in res.output
+    res = CliRunner().invoke(check_json, [str(path), "--sort-keys", "--replace"])
+    assert res.exit_code == 0
+    assert path.read_text() == json.dumps({"a": 2, "b": 1}, indent=2) + "\n"
 
 
 def test_check_json_console_script():
