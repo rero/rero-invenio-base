@@ -37,7 +37,7 @@ dev = [
     "ruff>=0.12.3",
 ]
 
-[tool.project.entry-points]
+[project.scripts]
 check_json = "rero_invenio_base.cli.utils:check_json"
 
 [project.entry-points."flask.commands"]
