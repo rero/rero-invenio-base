@@ -9,14 +9,8 @@ from time import sleep
 
 import click
 from invenio_search import current_search_client
+from invenio_search.cli import search_version_check, with_appcontext
 from opensearchpy.exceptions import NotFoundError
-
-try:
-    from invenio_search.cli import es_version_check
-except ImportError:
-    from invenio_search.cli import search_version_check as es_version_check
-
-from invenio_search.cli import with_appcontext
 
 from ..shared import abort_if_false
 
@@ -31,7 +25,7 @@ def task():
 
 @task.command("get")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("task")
 def task_get(task):
     """Get task info.
@@ -54,7 +48,7 @@ def task_get(task):
 
 @task.command("list")
 @with_appcontext
-@es_version_check
+@search_version_check
 def task_list():
     """Get task list."""
     res = current_search_client.tasks.list()
@@ -71,7 +65,7 @@ def task_list():
     prompt="Do you really want to cancel the task?",
 )
 @click.argument("task")
-@es_version_check
+@search_version_check
 def task_cancel(task):
     """Cancel task.
 
@@ -87,7 +81,7 @@ def task_cancel(task):
 
 @task.command("watch")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("task")
 @click.option("-n", "--interval", default=1, type=int, help="seconds to wait between updates")
 def task_watch(task, interval):
