@@ -3,6 +3,7 @@
 
 """Test cli search index commands."""
 
+import json
 import sys
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -22,6 +23,7 @@ from rero_invenio_base.cli.search.index import (
     rebuild_index,
     reindex,
     switch_index,
+    update_mapping,
 )
 
 
@@ -57,14 +59,13 @@ def test_cli_search_open_index_error(app, search_runner):
         assert "Cannot open index" in res.output
 
 
-def test_cli_search_close_index(app, search_runner):
-    """Test close index command."""
-    runner = search_runner
-
+def test_cli_search_close_index_requires_index(app, search_runner):
+    """Close refuses to run without an explicit index, rather than close them all."""
     with patch("rero_invenio_base.cli.search.index.Index") as mock_index:
-        mock_index.return_value.close.return_value = {"acknowledged": True}
-        res = runner.invoke(close_index, [], obj=app)
-        assert res.exit_code == 0
+        res = search_runner.invoke(close_index, [], obj=app)
+        assert res.exit_code == 2
+        assert "Missing option '-i' / '--index'" in res.output
+        mock_index.assert_not_called()
 
 
 def test_cli_search_close_index_error(app, search_runner):
@@ -254,6 +255,101 @@ def test_cli_search_switch_index_real(app, search_runner, new_index_name1, new_i
     aliases = current_search_client.indices.get_alias(name=test_alias)
     assert new_index_name2 in aliases
     assert new_index_name1 not in aliases
+
+
+def test_cli_search_switch_index_keeps_alias_properties(app, search_runner, new_index_name1, new_index_name2):
+    """Switching moves the alias filter, routing and write index flag along."""
+    for name in (new_index_name1, new_index_name2):
+        current_search_client.indices.create(index=name)
+    properties = {
+        "filter": {"term": {"type": "book"}},
+        "index_routing": "1",
+        "search_routing": "1",
+        "is_write_index": True,
+    }
+    current_search_client.indices.put_alias(index=new_index_name1, name="test-alias", body=properties)
+
+    res = search_runner.invoke(switch_index, [new_index_name1, new_index_name2], obj=app)
+    assert res.exit_code == 0, res.output
+
+    aliases = current_search_client.indices.get_alias(name="test-alias")
+    assert list(aliases) == [new_index_name2]
+    assert aliases[new_index_name2]["aliases"]["test-alias"] == properties
+
+
+@pytest.mark.parametrize(
+    ("settings", "exit_code", "expected"),
+    [
+        (
+            {"analysis": {"analyzer": {"custom": {"type": "custom", "tokenizer": "standard"}}}},
+            0,
+            "successfully updated",
+        ),
+        ({"index": {"number_of_shards": 2}}, 1, "final records-record-v1.0.0 setting [index.number_of_shards]"),
+    ],
+    ids=["applied", "refused"],
+)
+def test_cli_search_update_mapping_settings_reopens(
+    app, search_runner, monkeypatch, tmp_path, new_index_name1, settings, exit_code, expected
+):
+    """Updating settings always reopens the index, and a refused update exits 1."""
+    mapping = tmp_path / "mapping.json"
+    mapping.write_text(json.dumps({"settings": settings, "mappings": {"properties": {"title": {"type": "text"}}}}))
+    monkeypatch.setitem(current_search.aliases, "records", {new_index_name1: str(mapping)})
+    current_search_client.indices.create(index=new_index_name1)
+
+    res = search_runner.invoke(update_mapping, ["-a", "records", "--settings"], obj=app)
+
+    assert res.exit_code == exit_code
+    assert expected in res.output
+    (status,) = current_search_client.cat.indices(index=new_index_name1, h="status", format="json")
+    assert status["status"] == "open"
+
+
+RESOURCE_COMMANDS = [
+    (create_index, ["{resource}", "new-index"]),
+    (move_index, ["{resource}", "old-index", "new-index", "--no-templates"]),
+    (rebuild_index, ["{resource}", "--no-templates"]),
+]
+
+
+def _invoke_on_resource(runner, app, command, args, resource):
+    return runner.invoke(command, [arg.format(resource=resource) for arg in args], obj=app)
+
+
+@pytest.mark.parametrize(("command", "args"), RESOURCE_COMMANDS, ids=["create", "move", "rebuild"])
+def test_cli_search_index_unknown_resource(app, search_runner, command, args):
+    """An unknown resource exits 1 and lists the available ones."""
+    res = _invoke_on_resource(search_runner, app, command, args, "nonexistent")
+    assert res.exit_code == 1
+    assert "Unknown resource(s): nonexistent." in res.output
+    assert "Available: " in res.output
+
+
+@pytest.mark.parametrize(("command", "args"), RESOURCE_COMMANDS, ids=["create", "move", "rebuild"])
+def test_cli_search_index_resource_with_several_mappings(app, search_runner, monkeypatch, command, args):
+    """A resource grouping several mappings is refused instead of using one of them."""
+    mapping = next(iter(current_search.aliases["records"].values()))
+    monkeypatch.setitem(current_search.aliases, "records", {"records-a": mapping, "records-b": mapping})
+    res = _invoke_on_resource(search_runner, app, command, args, "records")
+    assert res.exit_code == 1
+    assert "Resource 'records' has several mappings (records-a, records-b)" in res.output
+    assert not current_search_client.indices.exists(index="new-index")
+
+
+def test_cli_search_update_mapping_unknown_resource(app, search_runner):
+    """Updating the mapping of an unknown resource exits 1 instead of raising."""
+    res = search_runner.invoke(update_mapping, ["-a", "records", "-a", "nonexistent"], obj=app)
+    assert res.exit_code == 1
+    assert "Unknown resource(s): nonexistent." in res.output
+
+
+def test_cli_search_switch_index_missing_source(app, search_runner, new_index_name2):
+    """Switching from an index that does not exist fails instead of reporting success."""
+    current_search_client.indices.create(index=new_index_name2)
+    res = search_runner.invoke(switch_index, ["no-such-index", new_index_name2], obj=app)
+    assert res.exit_code == 1
+    assert "ERROR SWITCH" in res.output
 
 
 def _old_index():
