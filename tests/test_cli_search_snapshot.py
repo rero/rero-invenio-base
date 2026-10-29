@@ -7,10 +7,12 @@ import re
 import sys
 from types import SimpleNamespace
 
+import pytest
 from invenio_search import current_search_client
-from opensearchpy.exceptions import RequestError
+from opensearchpy.exceptions import RequestError, TransportError
 
 from rero_invenio_base.cli.search.snapshot.cli import WAIT_REQUEST_TIMEOUT, create_snapshot, restore_snapshot
+from rero_invenio_base.cli.search.snapshot.repository import create_repository, delete_repository, list_repository
 
 
 def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None):
@@ -21,6 +23,9 @@ def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None)
         if error:
             raise error
         return {"accepted": True}
+
+    def snapshot_get(repository, name, **kwargs):
+        return {"snapshots": [{"snapshot": name, "indices": []}]}
 
     def snapshot_restore(repository, name, body=None, **kwargs):
         captured["restore"] = {"repository": repository, "name": name, "body": body}
@@ -33,11 +38,11 @@ def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None)
         return {"acknowledged": True}
 
     def indices_close(index=None, **kwargs):
-        captured["close"] = index
+        captured.setdefault("close", []).append(index)
         return {"acknowledged": True}
 
     def indices_open(index=None, **kwargs):
-        captured["open"] = index
+        captured.setdefault("open", []).append(index)
         return {"acknowledged": True}
 
     snapshot_cli = sys.modules[create_snapshot.callback.__module__]
@@ -46,7 +51,7 @@ def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None)
         "current_search_client",
         SimpleNamespace(
             cat=current_search_client.cat,
-            snapshot=SimpleNamespace(create=snapshot_create, restore=snapshot_restore),
+            snapshot=SimpleNamespace(create=snapshot_create, get=snapshot_get, restore=snapshot_restore),
             indices=SimpleNamespace(delete=indices_delete, close=indices_close, open=indices_open),
         ),
     )
@@ -118,16 +123,67 @@ def test_snapshot_create_duplicate_name(app, search_runner, monkeypatch, new_ind
     assert "Delete '20260916_1544' first, or pick another name" in res.output
 
 
-def test_snapshot_restore_reopens_on_failure(app, search_runner, monkeypatch, new_index_name1):
-    """A failed restore must not leave the cluster closed."""
-    current_search_client.indices.create(index=new_index_name1, body={})
+def test_snapshot_restore_reopens_on_failure(app, search_runner, monkeypatch, new_index_name1, new_index_name2):
+    """A failed restore reopens what it closed, and only that."""
+    for name in (new_index_name1, new_index_name2):
+        current_search_client.indices.create(index=name, body={})
+    current_search_client.indices.close(index=new_index_name2)
     captured = {}
     _fake_snapshot_client(monkeypatch, captured, restore_error=RequestError(400, "snapshot_restore_exception", {}))
 
     res = search_runner.invoke(restore_snapshot, ["tests", "snap", "--yes-i-know"], obj=app)
     assert res.exit_code == 1
-    assert "reopening all indices" in res.output
-    assert captured["open"] == "*"
+    assert "reopening the indices" in res.output
+    assert captured["open"] == ["*"]
+    assert captured["close"] == ["*", new_index_name2]
+
+
+def test_snapshot_restore_keeps_closed_indices_closed(
+    app, search_runner, snapshot_repository, new_index_name1, new_index_name2
+):
+    """Restore reopens the indices it closed, but not those closed before it and not restored."""
+    for name in (new_index_name1, new_index_name2):
+        current_search_client.indices.create(index=name, body={})
+    current_search_client.snapshot.create(
+        snapshot_repository, "snap", body={"indices": new_index_name1}, wait_for_completion=True
+    )
+    # both closed beforehand: the first comes back with the restore, the second is left alone.
+    current_search_client.indices.close(index=f"{new_index_name1},{new_index_name2}")
+
+    res = search_runner.invoke(restore_snapshot, [snapshot_repository, "snap", "--wait", "--yes-i-know"], obj=app)
+    assert res.exit_code == 0, res.output
+    assert f"Closed again, as before the restore: {new_index_name2}." in res.output
+    indices = current_search_client.cat.indices(index="records-*", h="index,status", format="json")
+    assert {idx["index"]: idx["status"] for idx in indices} == {new_index_name1: "open", new_index_name2: "close"}
+
+
+def test_snapshot_restore_unknown_snapshot(app, search_runner, snapshot_repository, new_index_name1):
+    """A wrong snapshot name fails before any index is closed."""
+    current_search_client.indices.create(index=new_index_name1, body={})
+    res = search_runner.invoke(restore_snapshot, [snapshot_repository, "missing", "--yes-i-know"], obj=app)
+    assert res.exit_code == 1
+    assert "All indices are closed." not in res.output
+    (status,) = current_search_client.cat.indices(index=new_index_name1, h="status", format="json")
+    assert status["status"] == "open"
+
+
+@pytest.mark.parametrize(
+    ("command", "args"),
+    [(list_repository, []), (create_repository, ["tests", "/backup"]), (delete_repository, ["tests", "--yes-i-know"])],
+    ids=["list", "create", "delete"],
+)
+def test_repository_command_errors_exit_1(app, search_runner, monkeypatch, command, args):
+    """A failing repository call is reported and exits 1."""
+
+    def fail(*args, **kwargs):
+        raise TransportError(500, "repository_exception", {})
+
+    repository_cli = sys.modules[command.callback.__module__]
+    snapshot = SimpleNamespace(get_repository=fail, create_repository=fail, delete_repository=fail)
+    monkeypatch.setattr(repository_cli, "current_search_client", SimpleNamespace(snapshot=snapshot))
+    res = search_runner.invoke(command, args, obj=app)
+    assert res.exit_code == 1
+    assert "repository_exception" in res.output
 
 
 def test_snapshot_restore_deletes_instance_indices(app, search_runner, monkeypatch):

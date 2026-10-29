@@ -10,9 +10,17 @@ from time import sleep
 import click
 from invenio_search import current_search_client
 from invenio_search.cli import search_version_check, with_appcontext
-from opensearchpy.exceptions import NotFoundError
 
 from ..shared import abort_if_false
+
+
+def task_failure(res):
+    """Return what made a completed task fail: its error, or its failures.
+
+    :param res: the response of the task API for a completed task.
+    :returns: the error or the failures, None if the task succeeded.
+    """
+    return res.get("error") or res.get("response", {}).get("failures") or None
 
 
 @click.group()
@@ -87,6 +95,9 @@ def task_cancel(task):
 def task_watch(task, interval):
     """Watch task info.
 
+    Exits 1 when the task fails, or when it cannot be found: a finished task
+    stays retrievable, so a missing one has an unknown outcome.
+
     :param task: task id.
     :param interval: seconds to wait between updates.
     """
@@ -103,11 +114,12 @@ def task_watch(task, interval):
             seconds += interval
             res = current_search_client.tasks.get(task)
 
+        if failure := task_failure(res):
+            click.secho(f"Failed task: {task} {seconds} seconds ...", fg="red")
+            click.secho(f"{pformat(failure)}", fg="red")
+            sys.exit(1)
         click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
         click.secho(f"{pformat(res.get('response'))}", fg="green")
-    except NotFoundError:
-        # a completed task is dropped from the task list: that is a success.
-        click.secho(f"Finished task: {task} {seconds} seconds ...", fg="green")
     except Exception as err:
         click.secho(f"Error: {err}", fg="red")
         sys.exit(1)
