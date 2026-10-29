@@ -63,6 +63,27 @@ def _instance_indices():
     return f"{prefix}*" if prefix else "*,-.*"
 
 
+def _indices_to_keep_closed(restored):
+    """Return the indices already closed that the restore leaves alone.
+
+    :param restored: indices the snapshot restores, which come back open.
+    :returns: sorted names of the indices to close again after the restore.
+    """
+    indices = current_search_client.cat.indices(index="*", h="index,status", format="json")
+    return sorted(idx["index"] for idx in indices if idx["status"] == "close" and idx["index"] not in restored)
+
+
+def _reopen_indices(keep_closed):
+    """Reopen the indices closed for a restore, and only those.
+
+    :param keep_closed: indices that were closed before the restore.
+    """
+    current_search_client.indices.open(index="*", allow_no_indices=True, ignore_unavailable=True)
+    if keep_closed:
+        current_search_client.indices.close(index=",".join(keep_closed), ignore_unavailable=True)
+        click.secho(f"Closed again, as before the restore: {', '.join(keep_closed)}.", fg="yellow")
+
+
 def _print_response(res):
     """Print an API response, using plain messages for simple acknowledgements."""
     if res.get("accepted"):
@@ -232,11 +253,15 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
     """Restore a snapshot into the cluster.
 
     By default all cluster indices are closed before the restore and reopened
-    afterwards, as Search requires to restore over existing indices. With
-    --delete the instance indices are dropped beforehand instead.
+    afterwards, as Search requires to restore over existing indices; those
+    already closed and not restored stay closed. With --delete the instance
+    indices are dropped beforehand instead.
     """
     closed = False
+    keep_closed = []
     try:
+        # read the snapshot first: a wrong name must fail before any index is touched.
+        restored = set(current_search_client.snapshot.get(repository, name)["snapshots"][0]["indices"])
         if delete_indices:
             instance_indices = _instance_indices()
             click.secho(f"Indices to delete: {instance_indices}", fg="yellow")
@@ -245,6 +270,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
             current_search_client.indices.delete(index=instance_indices, allow_no_indices=True, ignore_unavailable=True)
             click.secho("Instance indices deleted.")
         else:
+            keep_closed = _indices_to_keep_closed(restored)
             current_search_client.indices.close(index="*", allow_no_indices=True, ignore_unavailable=True)
             closed = True
             click.secho("All indices are closed.")
@@ -260,11 +286,13 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
         )
         if closed:
             if wait:
-                click.secho("Opening all indices...")
-                current_search_client.indices.open(index="*", allow_no_indices=True, ignore_unavailable=True)
-                click.secho("All indices are open.")
+                click.secho("Reopening the indices...")
+                _reopen_indices(keep_closed)
+                click.secho("Indices reopened.")
             else:
                 click.secho("Restore running in background. Open indices manually once complete.")
+                if keep_closed:
+                    click.secho(f"Leave closed, as before the restore: {', '.join(keep_closed)}.", fg="yellow")
     except click.Abort:
         raise
     except Exception as err:
@@ -272,7 +300,7 @@ def restore_snapshot(repository, name, wait, delete_indices, global_state):
         if closed:
             # nothing is restoring any more, so leaving the cluster closed,
             # system indices included, would only add an outage to the failure.
-            click.secho("Restore failed, reopening all indices...", fg="yellow")
-            current_search_client.indices.open(index="*", allow_no_indices=True, ignore_unavailable=True)
-            click.secho("All indices are open.", fg="yellow")
+            click.secho("Restore failed, reopening the indices...", fg="yellow")
+            _reopen_indices(keep_closed)
+            click.secho("Indices reopened.", fg="yellow")
         sys.exit(1)

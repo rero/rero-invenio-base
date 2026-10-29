@@ -16,6 +16,8 @@ from jsonpatch import make_patch
 from opensearch_dsl import Index
 from opensearchpy.exceptions import NotFoundError, OpenSearchException, RequestError, TransportError
 
+from .task import task_failure
+
 
 def _exit_unknown_resources(resources):
     """Report resources that have no registered mapping and exit 1.
@@ -73,22 +75,22 @@ def _watch_reindex_task(task, interval, verbose):
     :param task: task id returned by the reindex API.
     :param interval: seconds to wait between two status polls.
     :param verbose: print task progress on each poll.
-    :returns: True on success, False if the task reported failures.
+    :returns: True on success, False if the task failed or its outcome cannot be read.
     """
     count = 0
     while True:
         try:
             res = current_search_client.tasks.get(task)
-        except NotFoundError:
-            if verbose:
-                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
-            return True
+        except NotFoundError as err:
+            # a finished task stays retrievable, so a missing one has an
+            # unknown outcome: never take it for a success.
+            click.secho(f"ERROR REINDEX: task {task} not found: {err}", fg="red")
+            return False
         except RequestError as err:
             if err.error != "index_closed_exception":
                 raise
-            if verbose:
-                click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
-            return True
+            click.secho(f"ERROR REINDEX: task {task} cannot be read, the tasks index is closed.", fg="red")
+            return False
         if res.get("completed"):
             break
         if verbose:
@@ -101,8 +103,8 @@ def _watch_reindex_task(task, interval, verbose):
     if verbose:
         click.secho(f"Finished task: {task} {count} seconds.", fg="yellow")
         click.secho(f"{pformat(res.get('response'))}", fg="yellow")
-    if failures := res.get("response", {}).get("failures"):
-        click.secho(f"ERROR REINDEX: {failures}", fg="red")
+    if failure := task_failure(res):
+        click.secho(f"ERROR REINDEX: {failure}", fg="red")
         return False
     return True
 

@@ -540,19 +540,34 @@ def test_watch_reindex_task_polls_without_server_timeout(monkeypatch, capsys):
     assert "Finished task: task-1 10 seconds." in output
 
 
-def test_watch_reindex_task_failures(monkeypatch):
-    """A task reporting failures makes the watch return False."""
-    _fake_watch(monkeypatch, [{"completed": True, "response": {"failures": ["boom"]}}])
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"completed": True, "response": {"failures": ["boom"]}},
+        {"completed": True, "error": {"type": "search_phase_execution_exception"}},
+    ],
+    ids=["failures", "error"],
+)
+def test_watch_reindex_task_failures(monkeypatch, capsys, response):
+    """A task reporting failures or an error makes the watch return False."""
+    _fake_watch(monkeypatch, [response])
     assert not _watch_reindex_task("task-2", 5, verbose=False)
+    assert "ERROR REINDEX" in capsys.readouterr().out
 
 
-def test_watch_reindex_task_vanished(monkeypatch):
-    """A task that is gone or whose index got closed counts as finished."""
-    _fake_watch(monkeypatch, [NotFoundError(404, "resource_not_found_exception", {})])
-    assert _watch_reindex_task("task-3", 5, verbose=False)
-
-    _fake_watch(monkeypatch, [RequestError(400, "index_closed_exception", {})])
-    assert _watch_reindex_task("task-4", 5, verbose=False)
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (NotFoundError(404, "resource_not_found_exception", {}), "task task-3 not found"),
+        (RequestError(400, "index_closed_exception", {}), "task task-3 cannot be read"),
+    ],
+    ids=["not-found", "tasks-index-closed"],
+)
+def test_watch_reindex_task_unknown_outcome(monkeypatch, capsys, error, expected):
+    """A task that cannot be read is never taken for a success."""
+    _fake_watch(monkeypatch, [error])
+    assert not _watch_reindex_task("task-3", 5, verbose=False)
+    assert expected in capsys.readouterr().out
 
 
 def test_watch_reindex_task_propagates_other_errors(monkeypatch):
