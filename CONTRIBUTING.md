@@ -56,8 +56,15 @@ If you are proposing a feature:
 
 ## Get Started
 
-Ready to contribute? See the [installation procedure](INSTALL.md) to setup a
-local development environment.
+Ready to contribute? The project is managed with [uv](https://docs.astral.sh/uv/)
+and its tests need Docker, which runs the OpenSearch service:
+
+```bash
+uv sync                 # create the virtual environment
+uv run poe format       # format the code
+uv run poe lint         # check the code
+uv run ./scripts/test   # audit, lint and run the tests against OpenSearch
+```
 
 ## Pull Request Guidelines
 

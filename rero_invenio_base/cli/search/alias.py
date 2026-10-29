@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Click Search index command-line utilities."""
+"""Click Search alias command-line utilities."""
 
 import json
 import sys
