@@ -1,11 +1,7 @@
 # SPDX-FileCopyrightText: Fondation RERO+
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Version information for RERO Invenio Base.
-
-This file is imported by ``rero_invenio_base.__init__``,
-and parsed by ``setup.py``.
-"""
+"""Version information for RERO Invenio Base, read from the installed package metadata."""
 
 from importlib import metadata
 
