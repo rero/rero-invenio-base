@@ -11,16 +11,10 @@ from pprint import pformat
 
 import click
 from invenio_search import current_search, current_search_client
+from invenio_search.cli import search_version_check, with_appcontext
+from jsonpatch import make_patch
 from opensearch_dsl import Index
 from opensearchpy.exceptions import NotFoundError, OpenSearchException, RequestError, TransportError
-
-try:
-    from invenio_search.cli import es_version_check
-except ImportError:
-    from invenio_search.cli import search_version_check as es_version_check
-
-from invenio_search.cli import with_appcontext
-from jsonpatch import make_patch
 
 
 def _create_index(index_name, f_mapping, exit_code=1):
@@ -145,7 +139,7 @@ def index():
 
 @index.command("reindex")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("source")
 @click.argument("destination")
 def reindex(source, destination):
@@ -200,7 +194,7 @@ def close_index(index):
 
 @index.command("switch")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("old")
 @click.argument("new")
 def switch_index(old, new):
@@ -219,7 +213,7 @@ def switch_index(old, new):
 
 @index.command("create")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)
 @click.argument("resource")
@@ -269,7 +263,7 @@ def update_mapping(aliases, settings):
 
 @index.command("move")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("resource")
 @click.argument("old")
 @click.argument("new")
@@ -357,7 +351,7 @@ def _reindex_pass(src, dest, interval, verbose, label, src_label, dest_label, co
 
 @index.command("rebuild")
 @with_appcontext
-@es_version_check
+@search_version_check
 @click.argument("resource")
 @click.option("-t", "--templates/--no-templates", "templates", is_flag=True, default=True)
 @click.option("-v", "--verbose/--no-verbose", "verbose", is_flag=True, default=False)

@@ -1,17 +1,5 @@
-# RERO Invenio Base
-# Copyright (C) 2025 RERO.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-FileCopyrightText: Fondation RERO+
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 """Test cli search index commands."""
 
@@ -37,9 +25,9 @@ from rero_invenio_base.cli.search.index import (
 )
 
 
-def test_cli_search_reindex(app, es_runner):
+def test_cli_search_reindex(app, search_runner):
     """Test reindex command."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.current_search_client") as mock_client:
         mock_client.reindex = MagicMock(return_value={"task": "task_123"})
@@ -48,9 +36,9 @@ def test_cli_search_reindex(app, es_runner):
         assert "task_123" in res.output
 
 
-def test_cli_search_open_index(app, es_runner):
+def test_cli_search_open_index(app, search_runner):
     """Test open index command."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.Index") as mock_index:
         mock_index.return_value.open.return_value = {"acknowledged": True}
@@ -58,9 +46,9 @@ def test_cli_search_open_index(app, es_runner):
         assert res.exit_code == 0
 
 
-def test_cli_search_open_index_error(app, es_runner):
+def test_cli_search_open_index_error(app, search_runner):
     """Test open index command with error."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.Index") as mock_index:
         mock_index.return_value.open.side_effect = OpenSearchException("Cannot open index")
@@ -69,9 +57,9 @@ def test_cli_search_open_index_error(app, es_runner):
         assert "Cannot open index" in res.output
 
 
-def test_cli_search_close_index(app, es_runner):
+def test_cli_search_close_index(app, search_runner):
     """Test close index command."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.Index") as mock_index:
         mock_index.return_value.close.return_value = {"acknowledged": True}
@@ -79,9 +67,9 @@ def test_cli_search_close_index(app, es_runner):
         assert res.exit_code == 0
 
 
-def test_cli_search_close_index_error(app, es_runner):
+def test_cli_search_close_index_error(app, search_runner):
     """Test close index command with error."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.Index") as mock_index:
         mock_index.return_value.close.side_effect = OpenSearchException("Cannot close index")
@@ -90,9 +78,9 @@ def test_cli_search_close_index_error(app, es_runner):
         assert "Cannot close index" in res.output
 
 
-def test_cli_search_info(app, es_runner):
+def test_cli_search_info(app, search_runner):
     """Test info command."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.current_search_client") as mock_client:
         mock_client.indices.get = MagicMock(
@@ -102,9 +90,9 @@ def test_cli_search_info(app, es_runner):
         assert res.exit_code == 0
 
 
-def test_cli_search_info_with_options(app, es_runner):
+def test_cli_search_info_with_options(app, search_runner):
     """Test info command with display options."""
-    runner = es_runner
+    runner = search_runner
 
     with patch("rero_invenio_base.cli.search.index.current_search_client") as mock_client:
         mock_client.indices.get = MagicMock(
@@ -116,14 +104,14 @@ def test_cli_search_info_with_options(app, es_runner):
         assert res.exit_code == 0
 
 
-def test_cli_search_move_index_error_create(app, es_runner):
+def test_cli_search_move_index_error_create(app, search_runner):
     """Test move index exits 1 when the destination index cannot be created.
 
     ``new=MagicMock()`` is required: the Invenio proxies expose ``__await__``, so a
     bare ``patch()`` autodetects them as awaitable and installs an ``AsyncMock``
     whose children return coroutines instead of the configured values.
     """
-    runner = es_runner
+    runner = search_runner
 
     with (
         patch("rero_invenio_base.cli.search.index.current_search_client", new=MagicMock()) as mock_client,
@@ -140,9 +128,9 @@ def test_cli_search_move_index_error_create(app, es_runner):
             assert "ERROR CREATE: Create failed" in res.output
 
 
-def test_cli_search_move_index_error_reindex(app, es_runner):
+def test_cli_search_move_index_error_reindex(app, search_runner):
     """Test move index exits 2 when the reindex task reports failures."""
-    runner = es_runner
+    runner = search_runner
 
     with (
         patch("rero_invenio_base.cli.search.index.current_search_client", new=MagicMock()) as mock_client,
@@ -163,9 +151,9 @@ def test_cli_search_move_index_error_reindex(app, es_runner):
         assert not current_search_client.indices.exists(index="new-index")
 
 
-def test_cli_search_move_index_error_switch(app, es_runner):
+def test_cli_search_move_index_error_switch(app, search_runner):
     """Test move index exits 3 when the alias switch fails."""
-    runner = es_runner
+    runner = search_runner
 
     with (
         patch("rero_invenio_base.cli.search.index.current_search_client", new=MagicMock()) as mock_client,
@@ -188,20 +176,20 @@ def test_cli_search_move_index_error_switch(app, es_runner):
 # Integration tests using real OpenSearch instance
 
 
-def test_cli_search_create_index_error(app, es_runner, new_index_name1):
+def test_cli_search_create_index_error(app, search_runner, new_index_name1):
     """Creating an index twice reports the error instead of raising."""
-    res = es_runner.invoke(create_index, ["records", new_index_name1], obj=app)
+    res = search_runner.invoke(create_index, ["records", new_index_name1], obj=app)
     assert res.exit_code == 0
     assert f"Index {new_index_name1} created." in res.output
 
-    res = es_runner.invoke(create_index, ["records", new_index_name1], obj=app)
+    res = search_runner.invoke(create_index, ["records", new_index_name1], obj=app)
     assert res.exit_code == 1
     assert "ERROR CREATE" in res.output
 
 
-def test_cli_search_info_real_index(app, es_runner, new_index_name1):
+def test_cli_search_info_real_index(app, search_runner, new_index_name1):
     """Test info command with real OpenSearch index."""
-    runner = es_runner
+    runner = search_runner
 
     # Create a real index
     current_search_client.indices.create(
@@ -222,9 +210,9 @@ def test_cli_search_info_real_index(app, es_runner, new_index_name1):
     assert "settings" in res.output
 
 
-def test_cli_search_open_close_real_index(app, es_runner, new_index_name1):
+def test_cli_search_open_close_real_index(app, search_runner, new_index_name1):
     """Test open and close commands with real OpenSearch index."""
-    runner = es_runner
+    runner = search_runner
 
     # Create a real index
     current_search_client.indices.create(
@@ -245,9 +233,9 @@ def test_cli_search_open_close_real_index(app, es_runner, new_index_name1):
     assert res.exit_code == 0
 
 
-def test_cli_search_switch_index_real(app, es_runner, new_index_name1, new_index_name2):
+def test_cli_search_switch_index_real(app, search_runner, new_index_name1, new_index_name2):
     """Test switch command with real OpenSearch indices."""
-    runner = es_runner
+    runner = search_runner
 
     # Create two real indices
     current_search_client.indices.create(index=new_index_name1, body={"settings": {"number_of_shards": 1}})
