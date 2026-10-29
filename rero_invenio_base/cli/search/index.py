@@ -192,14 +192,7 @@ def reindex(source, destination):
 
     See: https://opensearch.org/docs/latest/api-reference/document-apis/reindex/
     """
-    res = current_search_client.reindex(
-        body={
-            "source": {"index": source},
-            "dest": {"index": destination, "version_type": "external_gte"},
-        },
-        wait_for_completion=False,
-    )
-    click.secho(f"Task: {res['task']}", fg="green")
+    _do_reindex(source, destination, interval=0, verbose=False)
 
 
 @index.command("open")
