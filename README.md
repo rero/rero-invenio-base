@@ -13,3 +13,11 @@ Number](https://img.shields.io/github/tag/rero/rero-invenio-base.svg)](https://g
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 Generic backend libraries for RERO Invenio instances.
+
+## Security
+
+The `rero_invenio_base.modules.tasks.run_on_worker` Celery task executes the
+Python code it receives. It is registered on the workers of every instance that
+installs this package, so anyone able to publish a message to the Celery broker
+can run any code on those workers. Keep the broker on a private network and its
+credentials secret.

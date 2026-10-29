@@ -10,6 +10,12 @@ from celery import shared_task
 def run_on_worker(code, fname=None, *args, **kwargs):
     """Run arbitrary code on the celery workers.
 
+    .. warning::
+        This task executes whatever code it receives, and it is registered on
+        every worker of an instance that installs this package. Anyone able to
+        publish a message to the Celery broker can therefore run any code on
+        the workers: keep the broker private and its credentials secret.
+
     :param code: str - the python code as string
     :param fname: str - the function name to execute, if not specified the
         entire code is executed
