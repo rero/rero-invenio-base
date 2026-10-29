@@ -52,33 +52,33 @@ def _fake_snapshot_client(monkeypatch, captured, error=None, restore_error=None)
     )
 
 
-def test_snapshot_create_no_match(app, es_runner):
+def test_snapshot_create_no_match(app, search_runner):
     """Create refuses to snapshot a pattern that matches no index."""
-    res = es_runner.invoke(create_snapshot, ["tests", "--indices", "nomatch-xyz*"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["tests", "--indices", "nomatch-xyz*"], obj=app)
     assert res.exit_code == 1
     assert "No index matches 'nomatch-xyz*'" in res.output
 
 
-def test_snapshot_create_prefixed_indices(app, es_runner, monkeypatch, new_index_name1):
+def test_snapshot_create_prefixed_indices(app, search_runner, monkeypatch, new_index_name1):
     """Create captures the prefixed indices of the instance and the global state."""
     monkeypatch.setitem(app.config, "SEARCH_INDEX_PREFIX", "records-")
     current_search_client.indices.create(index=new_index_name1, body={})
     captured = {}
     _fake_snapshot_client(monkeypatch, captured)
 
-    res = es_runner.invoke(create_snapshot, ["tests", "--name", "20260917_0900"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["tests", "--name", "20260917_0900"], obj=app)
     assert res.exit_code == 0
     assert "Snapshot '20260917_0900': 1 indices matching 'records-*'." in res.output
     assert captured["create"]["body"] == {"indices": "records-*", "include_global_state": True}
     assert captured["create"]["request_timeout"] is None
 
 
-def test_snapshot_create_names_the_snapshot_it_started(app, es_runner, monkeypatch, new_index_name1):
+def test_snapshot_create_names_the_snapshot_it_started(app, search_runner, monkeypatch, new_index_name1):
     """Without --wait the name must still be reported, the CLI invents it."""
     current_search_client.indices.create(index=new_index_name1, body={})
     _fake_snapshot_client(monkeypatch, {})
 
-    res = es_runner.invoke(create_snapshot, ["tests"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["tests"], obj=app)
     assert res.exit_code == 0
     started = next(line for line in res.output.splitlines() if "started" in line)
     assert re.fullmatch(
@@ -88,55 +88,55 @@ def test_snapshot_create_names_the_snapshot_it_started(app, es_runner, monkeypat
     )
 
 
-def test_snapshot_create_wait_raises_the_read_timeout(app, es_runner, monkeypatch, new_index_name1):
+def test_snapshot_create_wait_raises_the_read_timeout(app, search_runner, monkeypatch, new_index_name1):
     """--wait must outlive the 10s the client would otherwise give up after."""
     current_search_client.indices.create(index=new_index_name1, body={})
     captured = {}
     _fake_snapshot_client(monkeypatch, captured)
 
-    res = es_runner.invoke(create_snapshot, ["tests", "--wait"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["tests", "--wait"], obj=app)
     assert res.exit_code == 0
     assert captured["create"]["request_timeout"] == WAIT_REQUEST_TIMEOUT
 
 
-def test_snapshot_create_failure_exits(app, es_runner, new_index_name1):
+def test_snapshot_create_failure_exits(app, search_runner, new_index_name1):
     """A failing snapshot reports the error and exits non-zero."""
     current_search_client.indices.create(index=new_index_name1, body={})
-    res = es_runner.invoke(create_snapshot, ["nosuchrepository"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["nosuchrepository"], obj=app)
     assert res.exit_code == 1
     assert "ERROR SNAPSHOT" in res.output
 
 
-def test_snapshot_create_duplicate_name(app, es_runner, monkeypatch, new_index_name1):
+def test_snapshot_create_duplicate_name(app, search_runner, monkeypatch, new_index_name1):
     """A name already taken tells how to get out of it."""
     current_search_client.indices.create(index=new_index_name1, body={})
     error = RequestError(400, "invalid_snapshot_name_exception", {})
     _fake_snapshot_client(monkeypatch, {}, error=error)
 
-    res = es_runner.invoke(create_snapshot, ["tests", "--name", "20260916_1544"], obj=app)
+    res = search_runner.invoke(create_snapshot, ["tests", "--name", "20260916_1544"], obj=app)
     assert res.exit_code == 1
     assert "Delete '20260916_1544' first, or pick another name" in res.output
 
 
-def test_snapshot_restore_reopens_on_failure(app, es_runner, monkeypatch, new_index_name1):
+def test_snapshot_restore_reopens_on_failure(app, search_runner, monkeypatch, new_index_name1):
     """A failed restore must not leave the cluster closed."""
     current_search_client.indices.create(index=new_index_name1, body={})
     captured = {}
     _fake_snapshot_client(monkeypatch, captured, restore_error=RequestError(400, "snapshot_restore_exception", {}))
 
-    res = es_runner.invoke(restore_snapshot, ["tests", "snap", "--yes-i-know"], obj=app)
+    res = search_runner.invoke(restore_snapshot, ["tests", "snap", "--yes-i-know"], obj=app)
     assert res.exit_code == 1
     assert "reopening all indices" in res.output
     assert captured["open"] == "*"
 
 
-def test_snapshot_restore_deletes_instance_indices(app, es_runner, monkeypatch):
+def test_snapshot_restore_deletes_instance_indices(app, search_runner, monkeypatch):
     """Restore --delete drops the instance indices and leaves the global state alone."""
     monkeypatch.setitem(app.config, "SEARCH_INDEX_PREFIX", "records-")
     captured = {}
     _fake_snapshot_client(monkeypatch, captured)
 
-    res = es_runner.invoke(
+    res = search_runner.invoke(
         restore_snapshot,
         ["tests", "snap", "--delete", "--yes-i-know"],
         input="y\n",

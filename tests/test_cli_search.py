@@ -26,9 +26,9 @@ from rero_invenio_base.cli.search.snapshot.repository import (
 )
 
 
-def test_cli_search_index_alias(app, es_runner, new_index_name1, new_index_name2):
+def test_cli_search_index_alias(app, search_runner, new_index_name1, new_index_name2):
     """Test index and aliases command line interface."""
-    runner = es_runner
+    runner = search_runner
 
     res = runner.invoke(create_index, ["records", new_index_name1], obj=app)
     assert res.exit_code == 0
@@ -63,13 +63,13 @@ def test_cli_search_index_alias(app, es_runner, new_index_name1, new_index_name2
     assert res.exit_code == 0
 
 
-def test_cli_search_snapshot_repository(app, es_runner, tmp_path):
+def test_cli_search_snapshot_repository(app, search_runner, tmp_path):
     """Test snapshot repository command line interface.
 
     The location is relative to the node's ``path.repo``; ``tmp_path`` only
     supplies a name unique to this test.
     """
-    runner = es_runner
+    runner = search_runner
 
     res = runner.invoke(create_repository, ["tests", tmp_path.name], obj=app)
     assert res.exit_code == 0
@@ -87,9 +87,9 @@ def test_cli_search_snapshot_repository(app, es_runner, tmp_path):
     assert "tests" not in res.output
 
 
-def test_cli_search_snapshots(app, es_runner, snapshot_repository, new_index_name1):
+def test_cli_search_snapshots(app, search_runner, snapshot_repository, new_index_name1):
     """Test snapshot lifecycle command line interface."""
-    runner = es_runner
+    runner = search_runner
     repository = snapshot_repository
 
     # Give the snapshot something to capture.

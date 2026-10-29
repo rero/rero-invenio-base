@@ -60,7 +60,7 @@ def _instance_indices():
     the cluster: take everything but the system indices.
     """
     prefix = current_app.config.get("SEARCH_INDEX_PREFIX") or ""
-    return f"{prefix}*" if prefix else "*,-.*,-ilm-history-*"
+    return f"{prefix}*" if prefix else "*,-.*"
 
 
 def _print_response(res):

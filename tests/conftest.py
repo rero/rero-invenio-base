@@ -52,7 +52,7 @@ def snapshot_repository(app, search, tmp_path):
 
 
 @pytest.fixture(scope="function")
-def es_runner(app, search, new_index_name1, new_index_name2):
+def search_runner(app, search, new_index_name1, new_index_name2):
     """Create and remove indexes into search."""
     for i in [new_index_name1, new_index_name2]:
         current_search_client.indices.delete(
