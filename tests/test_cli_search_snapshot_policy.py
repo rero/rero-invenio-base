@@ -4,9 +4,11 @@
 """Test cli search snapshot policy commands."""
 
 import json
+from contextlib import suppress
 from unittest.mock import MagicMock, patch
 
 import pytest
+from invenio_search import current_search_client
 from opensearchpy.exceptions import NotFoundError
 
 from rero_invenio_base.cli.search.snapshot.policy import (
@@ -175,3 +177,45 @@ def test_policy_error_exits_1(app, search_runner, sm_request):
     res = search_runner.invoke(get_policy, ["missing"], obj=app)
     assert res.exit_code == 1
     assert "ERROR:" in res.output
+
+
+@pytest.fixture
+def live_policy(app, search):
+    """Name a policy on the cluster and delete it after the test."""
+    name = "rero-tests"
+    yield name
+    with suppress(NotFoundError):
+        current_search_client.transport.perform_request("DELETE", f"/_plugins/_sm/policies/{name}")
+
+
+def test_policy_lifecycle_on_cluster(app, search_runner, live_policy, policy_file, tmp_path):
+    """Every policy command works against the OpenSearch SM API."""
+
+    def run(command, *args):
+        res = search_runner.invoke(command, [*args], obj=app)
+        assert res.exit_code == 0, res.output
+        return res.output
+
+    # Read the state from get: explain lags behind until the SM config index refreshes.
+    def enabled():
+        return json.loads(run(get_policy, live_policy))["sm_policy"]["enabled"]
+
+    assert json.loads(run(create_policy, live_policy, policy_file))["sm_policy"]["name"] == live_policy
+    assert live_policy in run(list_policy, "--names-only").split()
+    assert json.loads(run(explain_policy, live_policy))["policies"][0]["name"] == live_policy
+
+    run(stop_policy, live_policy, "--yes-i-know")
+    assert enabled() is False
+    run(start_policy, live_policy)
+    assert enabled() is True
+
+    # Stop and start moved the sequence number: update succeeds only if it reads it back.
+    updated = tmp_path / "updated.json"
+    updated.write_text(json.dumps({**POLICY_BODY, "description": "updated"}))
+    run(update_policy, live_policy, str(updated))
+    assert json.loads(run(get_policy, live_policy))["sm_policy"]["description"] == "updated"
+
+    run(delete_policy, live_policy, "--yes-i-know")
+    res = search_runner.invoke(get_policy, [live_policy], obj=app)
+    assert res.exit_code == 1
+    assert "Snapshot management policy not found" in res.output
