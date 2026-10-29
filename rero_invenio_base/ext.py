@@ -34,12 +34,6 @@ class REROInvenioBase:
 
         :param app: Flask application instance
         """
-        # Use theme's base template if theme is installed
-        if "BASE_TEMPLATE" in app.config:
-            app.config.setdefault(
-                "RERO_INVENIO_BASE_BASE_TEMPLATE",
-                app.config["BASE_TEMPLATE"],
-            )
         for k in dir(config):
             if k.startswith("RERO_INVENIO_BASE_"):
                 app.config.setdefault(k, getattr(config, k))
