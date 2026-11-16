@@ -1667,12 +1667,12 @@ requires-dist = [
     { name = "invenio-records-rest", specifier = ">=2.2.0" },
     { name = "invenio-rest", specifier = ">=1.2.4" },
     { name = "invenio-search", extras = ["opensearch2"], specifier = ">=2.1.0" },
-    { name = "jsonpatch", specifier = "<2.0.0" },
+    { name = "jsonpatch" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "docker-services-cli", specifier = "<1.0.0" },
+    { name = "docker-services-cli" },
     { name = "pip-audit", specifier = ">=2.8.0" },
     { name = "poethepoet", specifier = ">=0.36.0" },
     { name = "pytest-invenio", specifier = ">=2.1.6" },

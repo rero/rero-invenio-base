@@ -21,7 +21,7 @@ requires-python = ">=3.14, <3.15"
 dependencies = [
     "babel>=2.16.0",
     "celery>=5.1.0",
-    "jsonpatch<2.0.0",
+    "jsonpatch",
     "invenio-search[opensearch2]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
     "invenio-i18n>=3.4.2",
@@ -34,7 +34,7 @@ dependencies = [
 dev = [
     "pytest-invenio>=2.1.6",
     "pip-audit>=2.8.0",
-    "docker-services-cli<1.0.0",
+    "docker-services-cli",
     "poethepoet>=0.36.0",
     "ruff>=0.12.3",
 ]
