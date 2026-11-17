@@ -7,6 +7,79 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <!-- version list -->
 
+## v2.0.0 (2026-11-17)
+
+### Bug Fixes
+
+- **cli**: Correct check_json output and exit code
+  ([`d3b5888`](https://github.com/rero/rero-invenio-base/commit/d3b58888d355d6a4e09df18e6f200c402c2e71e9))
+
+- **cli**: Correct check_json replace and paths
+  ([`abb7f23`](https://github.com/rero/rero-invenio-base/commit/abb7f235f16fa5ffa1b3dd9c5e693ab4c358dd82))
+
+- **export**: Pass the pid fetcher to serializers
+  ([`b8c9e84`](https://github.com/rero/rero-invenio-base/commit/b8c9e8459a86b14f45fadf68b50e1c3524f48050))
+
+- **search**: Fail safe on task and restore errors
+  ([`ab89ee3`](https://github.com/rero/rero-invenio-base/commit/ab89ee35ac56e29aeef941e6c1bd04a5efe6cbb3))
+
+- **search**: Make the index commands safer
+  ([`d82eb22`](https://github.com/rero/rero-invenio-base/commit/d82eb227ff449ddf67fe878abd91ba9f1495ee8e))
+
+### Build System
+
+- Update dependencies
+  ([`8bd8649`](https://github.com/rero/rero-invenio-base/commit/8bd86490f4386f250cbdaf4b1ea00ec62c0c6088))
+
+- **deps**: Declare the direct imports
+  ([`c3eb96f`](https://github.com/rero/rero-invenio-base/commit/c3eb96ff0c4e0e8c6360f17bf6e3ecdd88aeea9a))
+
+### Chores
+
+- Clear stale docs and dead config
+  ([`66c0539`](https://github.com/rero/rero-invenio-base/commit/66c0539e35227de3155a26853ded281799de19d7))
+
+### Continuous Integration
+
+- Split dev and deploy tests
+  ([`6439153`](https://github.com/rero/rero-invenio-base/commit/6439153fb5eaa40edfaef960942c169cb8d07fa0))
+
+- Update github actions
+  ([`b7e8561`](https://github.com/rero/rero-invenio-base/commit/b7e8561548f0f3df4dc5c436c345be2e31258661))
+
+### Documentation
+
+- **tasks**: Warn that run_on_worker runs any code
+  ([`d5901dc`](https://github.com/rero/rero-invenio-base/commit/d5901dcd78b85c7b7c7a2a2c70e2e783a99a3ecc))
+
+### Features
+
+- **cli**: Move health and queue to the root
+  ([`03243a5`](https://github.com/rero/rero-invenio-base/commit/03243a5bcc0c43f446b64a06409002170676daaa))
+
+- **search**: Migrate from Elasticsearch 7 to OpenSearch 2
+  ([`2ba9d1c`](https://github.com/rero/rero-invenio-base/commit/2ba9d1cd500271f5550d16963306706005c85621))
+
+### Refactoring
+
+- **search**: Drop the remaining es names
+  ([`204b01f`](https://github.com/rero/rero-invenio-base/commit/204b01f1259da83752763a4e88dc4f29d044bc66))
+
+- **search**: Reuse _do_reindex in reindex
+  ([`ce27a76`](https://github.com/rero/rero-invenio-base/commit/ce27a76be3b271635429b005129b92d037210bc0))
+
+### Testing
+
+- **search**: Run snapshot policies on OpenSearch
+  ([`831059c`](https://github.com/rero/rero-invenio-base/commit/831059c62a0078942887d263b1898c944d4a9d5c))
+
+### Breaking Changes
+
+- **cli**: `rero search health` and `rero search queue` become `rero health` and `rero queue`.
+
+- **cli**: Check_json needs at least one path; pass `.` to check the current directory.
+
+
 ## v1.4.0 (2026-10-15)
 
 ### Bug Fixes
