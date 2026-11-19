@@ -4,11 +4,26 @@
 """Test cli utils commands."""
 
 import json
+import subprocess
+import sys
 from importlib.metadata import entry_points
+from types import SimpleNamespace
 
+import pytest
 from click.testing import CliRunner
+from invenio_accounts.models import User
+from invenio_oauth2server import config as oauth2server_config
+from invenio_oauth2server.models import Token
 
-from rero_invenio_base.cli.utils import check_json
+from rero_invenio_base.cli.utils import (
+    SPDX_EXCLUDED_PATHS,
+    check_json,
+    check_license,
+    has_spdx_header,
+    needs_spdx_header,
+    schedules,
+    token_create,
+)
 
 DATA = {"key": "value", "list": [1, 2]}
 
@@ -121,3 +136,142 @@ def test_check_json_console_script():
     """The command is installed as the standalone check_json script."""
     (script,) = entry_points(group="console_scripts", name="check_json")
     assert script.load() is check_json
+
+
+def test_needs_spdx_header(tmp_path):
+    """Files are selected by extension, Dockerfile or shebang, and excluded by path."""
+    (script := tmp_path / "server").write_text("#!/usr/bin/env bash\necho\n")
+    (plain := tmp_path / "LICENSE").write_text("GNU AFFERO GENERAL PUBLIC LICENSE\n")
+
+    assert needs_spdx_header("rero_invenio_base/cli/utils.py")
+    assert needs_spdx_header("docker/nginx/Dockerfile")
+    assert needs_spdx_header(str(script))
+    assert not needs_spdx_header(str(plain))
+    assert not needs_spdx_header("tests/data/documents.json")
+    assert not needs_spdx_header("templates/email/notice.txt")
+    assert not needs_spdx_header(".github/workflows/release.yml")
+    assert not needs_spdx_header("CHANGELOG.md")
+    assert needs_spdx_header("data/wiki/home_en.md")
+    assert not needs_spdx_header("data/wiki/home_en.md", (*SPDX_EXCLUDED_PATHS, "data/wiki/"))
+
+
+def test_has_spdx_header(tmp_path):
+    """Both tags must be in the first lines, whatever the comment syntax."""
+    copyright_tag = "SPDX-FileCopyrightText: Fondation RERO+"
+    license_tag = "SPDX-License-Identifier: AGPL-3.0-or-later"
+
+    def write(name, content):
+        (file_path := tmp_path / name).write_text(content)
+        return str(file_path)
+
+    assert has_spdx_header(write("api.py", f"# {copyright_tag}\n# {license_tag}\n"))
+    assert has_spdx_header(write("page.html", f"{{# {copyright_tag} #}}\n{{# {license_tag} #}}\n"))
+    assert has_spdx_header(write("README.md", f"<!--\n{copyright_tag}\n{license_tag}\n-->\n"))
+    # missing tag, wrong license and header pushed out of the first lines
+    assert not has_spdx_header(write("no_license.py", f"# {copyright_tag}\n"))
+    assert not has_spdx_header(write("wrong_license.py", f"# {copyright_tag}\n# SPDX-License-Identifier: MIT\n"))
+    assert not has_spdx_header(write("too_late.py", f"{'\n' * 5}# {copyright_tag}\n# {license_tag}\n"))
+
+
+HEADER = "# SPDX-FileCopyrightText: Fondation RERO+\n# SPDX-License-Identifier: AGPL-3.0-or-later\n"
+
+
+def _git_repo(tmp_path, monkeypatch, files):
+    """Commit the files to a new git repository and make it the current directory.
+
+    :param files: content by relative path.
+    """
+    for name, content in files.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    monkeypatch.chdir(tmp_path)
+
+
+def test_check_license_headers(tmp_path, monkeypatch):
+    """Files with a header pass, the selected files without one make the check fail."""
+    _git_repo(
+        tmp_path,
+        monkeypatch,
+        {
+            "good.py": HEADER + "x = 1\n",
+            "bad.py": "x = 1\n",
+            "run": "#!/bin/sh\necho\n",
+            "Dockerfile": "FROM python\n",
+            "notes.txt": "no header needed\n",
+            "CHANGELOG.md": "# Changelog\n",
+            ".github/pull_request_template.md": "template\n",
+        },
+    )
+    res = CliRunner().invoke(check_license, [])
+    assert res.exit_code == 1
+    for name in ("bad.py", "run", "Dockerfile"):
+        assert f"{name}: Missing license header" in res.output
+    for name in ("good.py", "notes.txt", "CHANGELOG.md", ".github/"):
+        assert name not in res.output
+    assert "3 file(s) with errors." in res.output
+    res = CliRunner().invoke(check_license, ["--verbose"])
+    assert "good.py: License header found" in res.output
+
+
+def test_check_license_exclude(tmp_path, monkeypatch):
+    """--exclude skips the given paths on top of the default ones."""
+    _git_repo(tmp_path, monkeypatch, {"good.py": HEADER, "data/wiki/page.md": "page\n"})
+    assert CliRunner().invoke(check_license, []).exit_code == 1
+    res = CliRunner().invoke(check_license, ["-e", "data/wiki/"])
+    assert res.exit_code == 0, res.output
+
+
+def test_check_license_outside_git(tmp_path, monkeypatch):
+    """Without a git repository the check stops with an explicit error."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    res = CliRunner().invoke(check_license, [])
+    assert res.exit_code == 1
+    assert "git is required and must run in a git repository." in res.output
+
+
+def test_schedules(app, monkeypatch):
+    """Each periodic task of the beat schedule is listed with its schedule."""
+    monkeypatch.setattr(
+        sys.modules[schedules.callback.__module__],
+        "celery_app",
+        SimpleNamespace(conf=SimpleNamespace(beat_schedule={"harvest": {"task": "harvest", "schedule": 60}})),
+    )
+    res = CliRunner().invoke(schedules, [])
+    assert res.exit_code == 0
+    assert "harvest\t{'task': 'harvest', 'schedule': 60}" in res.output
+
+
+@pytest.fixture
+def oauth2server_app(app, db, monkeypatch):
+    """Give the app the OAuth2 server settings, which its extension sets in an instance."""
+    for key in dir(oauth2server_config):
+        if key.startswith("OAUTH2SERVER_"):
+            monkeypatch.setitem(app.config, key, getattr(oauth2server_config, key))
+    return app
+
+
+def test_token_create(oauth2server_app, db):
+    """A personal token is created for the user given by email or ID, with the given value or a generated one."""
+    user = User(email="admin@rero.ch", active=True)
+    db.session.add(user)
+    db.session.commit()
+    res = CliRunner().invoke(token_create, ["-n", "monitoring", "-u", "admin@rero.ch", "-t", "my-token"])
+    assert res.exit_code == 0, res.output
+    assert res.output.strip() == "my-token"
+    token = Token.query.filter_by(access_token="my-token").one()
+    assert (token.user_id, token.is_personal, token.client.name) == (user.id, True, "monitoring")
+
+    res = CliRunner().invoke(token_create, ["-n", "other", "-u", str(user.id)])
+    assert res.exit_code == 0, res.output
+    assert len(res.output.strip()) == oauth2server_config.OAUTH2SERVER_TOKEN_PERSONAL_SALT_LEN
+
+
+def test_token_create_unknown_user(oauth2server_app):
+    """An unknown user stops the command with an error instead of creating nothing silently."""
+    res = CliRunner().invoke(token_create, ["-n", "monitoring", "-u", "nobody@rero.ch"])
+    assert res.exit_code == 1
+    assert "No user found." in res.output

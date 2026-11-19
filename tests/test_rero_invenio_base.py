@@ -3,6 +3,8 @@
 
 """Module tests."""
 
+from importlib.metadata import entry_points
+
 from flask import Flask
 
 from rero_invenio_base import REROInvenioBase
@@ -26,3 +28,9 @@ def test_init():
     assert "rero-invenio-base" not in app.extensions
     ext.init_app(app)
     assert "rero-invenio-base" in app.extensions
+
+
+def test_entry_points():
+    """The extension is loaded by the UI and the API applications."""
+    for group in ("invenio_base.apps", "invenio_base.api_apps"):
+        assert REROInvenioBase in [entry_point.load() for entry_point in entry_points(group=group)]
