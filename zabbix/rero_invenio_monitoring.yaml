@@ -1,0 +1,2019 @@
+# SPDX-FileCopyrightText: Fondation RERO+
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+zabbix_export:
+  version: '8.0'
+  template_groups:
+  - uuid: a432997c8c964a0e8806c8a168e2a02d
+    name: hg_invenio
+  - uuid: 4435f8e7985f4947abae0e23f25dd9b9
+    name: HG_UNIDISTANCE
+  templates:
+  - uuid: 6f16674cb87f4f71bd9c7272afa06114
+    template: RERO Invenio Monitoring
+    name: RERO Invenio Monitoring
+    description: 'Monitoring of RERO Invenio instances (rero-ils, rero-mef, sonar) through the monitoring REST API of rero-invenio-base
+      (/api/monitoring/...). Set {$ADDRESS} and {$ACCESS_TOKEN} on each host; the token belongs to a user with the monitoring
+      role. Override {$WEB_API} for instances without documents (rero-mef: /api/agents/mef/).'
+    groups:
+    - name: hg_invenio
+    - name: HG_UNIDISTANCE
+    items:
+    - uuid: c75e9df0ccec45448e00460b24e9e01d
+      name: active primary shards
+      type: DEPENDENT
+      key: active_primary_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.active_primary_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 55aed6ef20fd453083c5b7805ee9d24d
+      name: active shards
+      type: DEPENDENT
+      key: active_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.active_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 342a19af334140909053b82373a41e1b
+      name: db connections free
+      type: DEPENDENT
+      key: db_connections_free
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.free
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: search
+      triggers:
+      - uuid: 065d42e6950b432d8ec7f876ef2be610
+        expression: last(/RERO Invenio Monitoring/db_connections_free)<20
+        name: free db connections
+        priority: AVERAGE
+        description: Free DB connections on {$ADDRESS}!
+    - uuid: a620b4ec9bd64663951016e2f97dc53f
+      name: db connections max
+      type: DEPENDENT
+      key: db_connections_max
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.max
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: f416b5359f7d4ebc937a5be3f9640b9f
+      name: db connections reserved
+      type: DEPENDENT
+      key: db_connections_reserved
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.reserved_for_super
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 26dbcc45dd984e7d86cc5639d1f4b3cf
+      name: db connections used
+      type: DEPENDENT
+      key: db_connections_used
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.used
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: b6bfffad42e947418fd86e3084815fa0
+      name: DB connection counts
+      type: HTTP_AGENT
+      key: db_connection_counts
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 3s
+      url: '{$ADDRESS}{$DB_CONNECTION_COUNTS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: db
+    - uuid: e47a193972db4b5ba16653414fc2e59d
+      name: DB SEARCH counts
+      type: HTTP_AGENT
+      key: search_db_counts
+      delay: 5m
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data.*
+      timeout: 30s
+      url: '{$ADDRESS}{$SEARCH_DB_COUNTS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: db-search
+    - uuid: 94c95cd1500542d6be35cf7fe1926e79
+      name: delayed unassigned shards
+      type: DEPENDENT
+      key: delayed_unassigned_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.delayed_unassigned_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: c3b4020927c841b182677fe12322e37c
+      name: SEARCH
+      type: HTTP_AGENT
+      key: search
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 3s
+      url: '{$ADDRESS}{$SEARCH}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: bb451989660d4703ba4f70b41af327c9
+      name: SEARCH INDICES
+      type: HTTP_AGENT
+      key: search_indices
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data.*
+      timeout: 3s
+      url: '{$ADDRESS}{$SEARCH_INDICES}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 46f3318311834b87918e1002f7685e3f
+      name: status
+      type: DEPENDENT
+      key: search_status
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.status
+      - type: JAVASCRIPT
+        parameters:
+        - 'var state = [''green'', ''yellow'', ''red''];
+
+
+          return state.indexOf(value.trim()) === -1 ? 255 : state.indexOf(value.trim());
+
+          '
+      - type: DISCARD_UNCHANGED_HEARTBEAT
+        parameters:
+        - 1h
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+      triggers:
+      - uuid: f1e87d6604f641cb829974db1d9fd7df
+        expression: last(/RERO Invenio Monitoring/search_status)=1
+        name: search status
+        priority: INFO
+        description: Search cluster status yellow.
+      - uuid: 28a2e30c09c24d9db57e66be73eb4a4d
+        expression: last(/RERO Invenio Monitoring/search_status)=2
+        name: search status high
+        priority: HIGH
+        description: Search cluster status red.
+    - uuid: 0e8c2e29b09e4747a58b7c02bfdfb20c
+      name: initializing shards
+      type: DEPENDENT
+      key: initializing_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.initializing_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: bf077aa322264a988ee5ac1b843f6725
+      name: number of data nodes
+      type: DEPENDENT
+      key: number_of_data_nodes
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.number_of_data_nodes
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 06c61e256cec49e287a07f97694af929
+      name: number of nodes
+      type: DEPENDENT
+      key: number_of_nodes
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.number_of_nodes
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: b36002284d95497ea9f1d1bb70e01add
+      name: number of pending tasks
+      type: DEPENDENT
+      key: number_of_pending_tasks
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.number_of_pending_tasks
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: eca967a2d27742668c46a5e7430ad61c
+      name: REDIS
+      type: HTTP_AGENT
+      key: redis
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 3s
+      url: '{$ADDRESS}{$REDIS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: redis
+    - uuid: bce41ad20f774d5896c43e2585c11ef7
+      name: relocating shards
+      type: DEPENDENT
+      key: relocating_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.relocating_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: e95bb306b7e9400090c434711e36ea95
+      name: task max waiting in queue
+      type: DEPENDENT
+      key: task_max_waiting_in_queue
+      units: ms
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.task_max_waiting_in_queue_millis
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 396d4ad3123e4d69ac58e8525ecf4cf3
+      name: unassigned shards
+      type: DEPENDENT
+      key: unassigned_shards
+      valuemap:
+        name: Search cluster state
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.unassigned_shards
+      master_item:
+        key: search
+      tags:
+      - tag: Monitoring
+        value: search
+    - uuid: 848452015a3241b6b67d9edc139b6eba
+      name: db idle in transaction
+      type: DEPENDENT
+      key: db_idle_in_transaction
+      delay: '0'
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.idle_in_transaction
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: db
+    - uuid: da7ba61f84124b859652565212247516
+      name: db oldest transaction
+      type: DEPENDENT
+      key: db_oldest_transaction
+      delay: '0'
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.oldest_transaction
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: db
+      units: s
+      triggers:
+      - uuid: 28c185b4c05a4f7f86829792b16e8cc6
+        expression: min(/RERO Invenio Monitoring/db_oldest_transaction,10m)>{$DB.TRANSACTION.MAXAGE}
+        name: transaction open for more than {$DB.TRANSACTION.MAXAGE}s
+        priority: WARNING
+        description: 'A transaction stays open: it holds locks and blocks vacuum. See /api/monitoring/db_connections.'
+    - uuid: 7604468d59ad43c581617f1e4affbab2
+      name: db size
+      type: DEPENDENT
+      key: db_size
+      delay: '0'
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.size
+      master_item:
+        key: db_connection_counts
+      tags:
+      - tag: Monitoring
+        value: db
+      units: B
+    - uuid: 5a5b3562ec1140a8b84b8544a48eac4f
+      name: SNAPSHOTS
+      type: HTTP_AGENT
+      key: snapshots
+      delay: 5m
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 10s
+      url: '{$ADDRESS}{$SNAPSHOTS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: snapshots
+    - uuid: c8a83550bfde4f45920a538c1a16fcc4
+      name: QUEUES
+      type: HTTP_AGENT
+      key: queues
+      delay: 1m
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 10s
+      url: '{$ADDRESS}{$QUEUES}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: queues
+    - uuid: 2d542824272d4d9cb373135d871567f3
+      name: HARVESTS
+      type: HTTP_AGENT
+      key: harvests
+      delay: 10m
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 10s
+      url: '{$ADDRESS}{$HARVESTS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: harvests
+    - uuid: acbebcaa33f4439aae766c4d4edfd0d0
+      name: TIMESTAMPS
+      type: HTTP_AGENT
+      key: timestamps
+      delay: 2m
+      history: 1h
+      value_type: TEXT
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.body.data
+      timeout: 10s
+      url: '{$ADDRESS}{$TIME_STAMPS}'
+      query_fields:
+      - name: access_token
+        value: '{$ACCESS_TOKEN}'
+      output_format: JSON
+      tags:
+      - tag: Monitoring
+        value: timestamps
+    discovery_rules:
+    - uuid: 8e7c9b25ae1c4dd7baeb8ac3d2cf4252
+      name: indices discovery
+      type: DEPENDENT
+      key: indices
+      filter:
+        evaltype: AND
+        conditions:
+        - macro: '{#INDEX}'
+          value: ^operation_logs.*$
+          operator: NOT_MATCHES_REGEX
+        - macro: '{#INDEX}'
+          value: ^top_queries-.*$
+          operator: NOT_MATCHES_REGEX
+        - macro: '{#INDEX}'
+          value: ^\..*$
+          operator: NOT_MATCHES_REGEX
+      lifetime_type: DELETE_IMMEDIATELY
+      item_prototypes:
+      - uuid: c5bc6665c5ec4400ba8b1a996cdefe9e
+        name: '{#INDEX} count'
+        type: DEPENDENT
+        key: count_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['docs.count']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 9dabd91e88624573acada0f8b2b3778a
+        name: '{#INDEX} deleted %'
+        type: CALCULATED
+        key: deleted_percent_[{#INDEX}]
+        history: 30d
+        value_type: FLOAT
+        units: '%'
+        params: 100*last(//deleted_[{#INDEX}])/(last(//count_[{#INDEX}])+(last(//count_[{#INDEX}])=0))
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 72be58de312d43d1875566bf5586dea3
+        name: '{#INDEX} deleted'
+        type: DEPENDENT
+        key: deleted_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['docs.deleted']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 0ae98bf39252489286dc81caaf433de2
+        name: '{#INDEX} health'
+        type: DEPENDENT
+        key: health_[{#INDEX}]
+        value_type: CHAR
+        valuemap:
+          name: Search cluster state
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].health
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: e1a32841e834458a895e6e271ce51cd5
+        name: '{#INDEX} pri'
+        type: DEPENDENT
+        key: pri_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].pri
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 10c16ae823334689b49cc0fa826da950
+        name: '{#INDEX} rep'
+        type: DEPENDENT
+        key: rep_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].rep
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 326cfcb4847149b18ce9b57aa023ce32
+        name: '{#INDEX} status'
+        type: DEPENDENT
+        key: status_[{#INDEX}]
+        value_type: CHAR
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].status
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 74bfead4ecd74c1796b6d6df13c2669a
+        name: '{#INDEX} size'
+        type: DEPENDENT
+        key: store.size_[{#INDEX}]
+        units: bytes
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['store.size']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      trigger_prototypes:
+      - uuid: 25e872b45f8045dd881e4dd3acba4571
+        expression: last(/RERO Invenio Monitoring/count_[{#INDEX}])>1000 and last(/RERO Invenio Monitoring/deleted_[{#INDEX}])>last(/RERO
+          Invenio Monitoring/count_[{#INDEX}])*0.5
+        name: search index % deleted {#INDEX}
+        priority: INFO
+        manual_close: 'YES'
+      graph_prototypes:
+      - uuid: ca0cf3ed1b8f438196bdb3e93cf7e398
+        name: '{#INDEX} search'
+        width: '600'
+        height: '100'
+        show_work_period: 'NO'
+        graph_items:
+        - color: 1A7C11
+          yaxisside: RIGHT
+          calc_fnc: MIN
+          item:
+            host: RERO Invenio Monitoring
+            key: store.size_[{#INDEX}]
+        - sortorder: '1'
+          color: '274482'
+          calc_fnc: MIN
+          item:
+            host: RERO Invenio Monitoring
+            key: count_[{#INDEX}]
+        - sortorder: '2'
+          color: F63100
+          calc_fnc: MIN
+          item:
+            host: RERO Invenio Monitoring
+            key: deleted_[{#INDEX}]
+      - uuid: 8908ad63738d4cc3990d51a4ad31feb2
+        name: '{#INDEX} search deleted'
+        show_work_period: 'NO'
+        ymin_type_1: FIXED
+        ymax_type_1: FIXED
+        graph_items:
+        - drawtype: FILLED_REGION
+          color: 5C6BC0
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: deleted_percent_[{#INDEX}]
+      master_item:
+        key: search_indices
+      lld_macro_paths:
+      - lld_macro: '{#INDEX}'
+        path: $.index
+    - uuid: e829bf499ddb4d66aa66c28124f58ca2
+      name: indices discovery oplg
+      type: DEPENDENT
+      key: indices_oplg
+      filter:
+        conditions:
+        - macro: '{#INDEX}'
+          value: ^operation_logs.*$
+      lifetime_type: DELETE_IMMEDIATELY
+      item_prototypes:
+      - uuid: 54ffc365896e49289d359b6d0017f844
+        name: '{#INDEX} count'
+        type: DEPENDENT
+        key: count__oplg_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['docs.count']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 494156576ae14035958435f97762343d
+        name: '{#INDEX} deleted'
+        type: DEPENDENT
+        key: deleted_oplg_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['docs.deleted']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: ee4c9f107be34e2799768b3ebf8af125
+        name: '{#INDEX} health'
+        type: DEPENDENT
+        key: health_oplg_[{#INDEX}]
+        value_type: CHAR
+        valuemap:
+          name: Search cluster state
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].health
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: da5fd040c0da41ffb5cf43603c80e879
+        name: '{#INDEX} pri'
+        type: DEPENDENT
+        key: pri_oplg_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].pri
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 828a735685e94c09ba30010e89393b6f
+        name: '{#INDEX} rep'
+        type: DEPENDENT
+        key: rep_oplg_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].rep
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 270548f4a72845d9a37787e002757c5f
+        name: '{#INDEX} size'
+        type: DEPENDENT
+        key: size_oplg_[{#INDEX}]
+        units: bytes
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].['store.size']
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      - uuid: 45c0f4a8fb9343d48f278331aed44cd7
+        name: '{#INDEX} status'
+        type: DEPENDENT
+        key: status_oplg_[{#INDEX}]
+        value_type: CHAR
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].status
+        - type: TRIM
+          parameters:
+          - '["]'
+        master_item:
+          key: search_indices
+        tags:
+        - tag: Monitoring
+          value: search
+      graph_prototypes:
+      - uuid: b1a3c4ede2b544a99e84e8e017a15676
+        name: '{#INDEX} search OPLG'
+        graph_items:
+        - color: 1A7C11
+          yaxisside: RIGHT
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: size_oplg_[{#INDEX}]
+        - sortorder: '1'
+          color: '274482'
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: count__oplg_[{#INDEX}]
+        - sortorder: '2'
+          color: F63100
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: deleted_oplg_[{#INDEX}]
+      master_item:
+        key: search_indices
+      lld_macro_paths:
+      - lld_macro: '{#INDEX}'
+        path: $.index
+    - uuid: aa9da3d7ec4341989c21c848e458a8f3
+      name: record discovery
+      type: DEPENDENT
+      key: record
+      lifetime: 1d
+      enabled_lifetime_type: DISABLE_NEVER
+      item_prototypes:
+      - uuid: f9dc36877e4948e2afb0c14c5cf42d34
+        name: '{#INDEX} DB changes'
+        type: DEPENDENT
+        key: db_changes_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].db
+        - type: TRIM
+          parameters:
+          - '[]'
+        - type: STR_REPLACE
+          parameters:
+          - '-'
+          - _
+        - type: SIMPLE_CHANGE
+        master_item:
+          key: search_db_counts
+        tags:
+        - tag: Monitoring
+          value: db-search
+      - uuid: e28b072130eb4304ab570cfb1ea1b2c6
+        name: '{#INDEX} DB-search'
+        type: DEPENDENT
+        key: db_search_[{#INDEX}]
+        value_type: FLOAT
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')]['db-search']
+        - type: TRIM
+          parameters:
+          - '[]'
+        master_item:
+          key: search_db_counts
+        tags:
+        - tag: Monitoring
+          value: db-search
+        trigger_prototypes:
+        - uuid: ce0cce3d1962458cb607498d1d8a50f2
+          expression: min(/RERO Invenio Monitoring/db_search_[{#INDEX}],15m)>0
+          name: '{#INDEX} db search difference'
+          priority: WARNING
+          description: There is a difference between DB and search in {#INDEX}!
+      - uuid: a7719369dfa74bdabb930d4f126212c6
+        name: '{#INDEX} DB'
+        type: DEPENDENT
+        key: db_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].db
+        - type: TRIM
+          parameters:
+          - '[]'
+        - type: STR_REPLACE
+          parameters:
+          - '-'
+          - _
+        master_item:
+          key: search_db_counts
+        tags:
+        - tag: Monitoring
+          value: db-search
+      - uuid: 56fa64d0c7f34ef283163d2a9e766b15
+        name: '{#INDEX} search'
+        type: DEPENDENT
+        key: search_[{#INDEX}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.[?(@.index=='{#INDEX}')].search
+        - type: TRIM
+          parameters:
+          - '[]'
+        master_item:
+          key: search_db_counts
+        tags:
+        - tag: Monitoring
+          value: db-search
+      graph_prototypes:
+      - uuid: cf6926dd5cce4324965270bdc24c9040
+        name: '{#INDEX} DB search counts'
+        width: '500'
+        graph_items:
+        - drawtype: GRADIENT_LINE
+          color: FF4000
+          yaxisside: RIGHT
+          item:
+            host: RERO Invenio Monitoring
+            key: db_search_[{#INDEX}]
+        - sortorder: '1'
+          color: F7941D
+          yaxisside: RIGHT
+          item:
+            host: RERO Invenio Monitoring
+            key: db_changes_[{#INDEX}]
+        - sortorder: '2'
+          color: 199C0D
+          item:
+            host: RERO Invenio Monitoring
+            key: db_[{#INDEX}]
+        - sortorder: '3'
+          color: 0080FF
+          item:
+            host: RERO Invenio Monitoring
+            key: search_[{#INDEX}]
+      master_item:
+        key: search_db_counts
+      lld_macro_paths:
+      - lld_macro: '{#INDEX}'
+        path: $.index
+    - uuid: 5bd6cb66a9484320900af01bf71a11b5
+      name: redis discovery
+      type: DEPENDENT
+      key: redis_counts
+      lifetime_type: DELETE_IMMEDIATELY
+      item_prototypes:
+      - uuid: 8e401913dad74d88ab45a56461ec78f5
+        name: '{#CACHE} commands'
+        type: DEPENDENT
+        key: commands_[{#CACHE}]
+        units: /s
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_commands_processed
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 941d95d0afda4aea8f9394209b7315c4
+        name: '{#CACHE} connections rejected'
+        type: DEPENDENT
+        key: connections_rejected_[{#CACHE}]
+        units: /s
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.rejected_connections
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: e2fb611991424fcf8c0340a74c8d1ce0
+        name: '{#CACHE} connections'
+        type: DEPENDENT
+        key: connections_[{#CACHE}]
+        units: /s
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_connections_received
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: af62129b1af6439db7d983985a27cada
+        name: '{#CACHE} cpu sys'
+        type: DEPENDENT
+        key: cpu_sys_[{#CACHE}]
+        value_type: FLOAT
+        units: '%'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.used_cpu_sys
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '625'
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: c1e0b49640a24e17ad7830ed41f4445c
+        name: '{#CACHE} cpu user'
+        type: DEPENDENT
+        key: cpu_user_[{#CACHE}]
+        value_type: FLOAT
+        units: '%'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.used_cpu_user
+        - type: CHANGE_PER_SECOND
+        - type: MULTIPLIER
+          parameters:
+          - '625'
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: e360ae9f85a544f5b122804e4fe160d9
+        name: '{#CACHE} keyspace hits'
+        type: DEPENDENT
+        key: keyspace_hits_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.keyspace_hits
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 887f293d5c084f0cb762eebbf55afc48
+        name: '{#CACHE} keyspace misses'
+        type: DEPENDENT
+        key: keyspace_misses_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.keyspace_misses
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 89d5c05831e742d99b0638b3eeb6ab7c
+        name: '{#CACHE} memory fragmentation ratio'
+        type: DEPENDENT
+        key: memory_fragmentation_ratio_[{#CACHE}]
+        value_type: FLOAT
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.mem_fragmentation_ratio
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: c1a25d4747e94b35b096e086cda4cdd0
+        name: '{#CACHE} memory peak'
+        type: DEPENDENT
+        key: memory_peak_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.used_memory_peak
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 81e73e2090ae430fa649cdb5017a2b47
+        name: '{#CACHE} memory rss'
+        type: DEPENDENT
+        key: memory_rss_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.used_memory_rss
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 1b55be64e2de40daac03bc0e43f5be7a
+        name: '{#CACHE} memory total'
+        type: DEPENDENT
+        key: memory_total_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_system_memory
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 830b17b46c194852ab71dae8e5c86a45
+        name: '{#CACHE} memory'
+        type: DEPENDENT
+        key: memory_[{#CACHE}]
+        units: '%'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.used_memory
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: e9024247d7d745058ba72f1f45131188
+        name: '{#CACHE} net input'
+        type: DEPENDENT
+        key: net_input_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_net_input_bytes
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 13d3c492e25c4e858ea06e507171672c
+        name: '{#CACHE} net output'
+        type: DEPENDENT
+        key: net_output_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_net_output_bytes
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 96f0d66d16a342e2b923300576fcbab3
+        name: '{#CACHE} reads'
+        type: DEPENDENT
+        key: reads_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_reads_processed
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      - uuid: 6f338b2312e748b9872ba2cb77d9666a
+        name: '{#CACHE} writes'
+        type: DEPENDENT
+        key: writes_[{#CACHE}]
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.{#CACHE}.total_writes_processed
+        - type: CHANGE_PER_SECOND
+        master_item:
+          key: redis
+        tags:
+        - tag: Monitoring
+          value: redis
+      graph_prototypes:
+      - uuid: cff332f9367045f29eb15e69663387ca
+        name: '{#CACHE} memory'
+        ymin_type_1: FIXED
+        graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: memory_[{#CACHE}]
+        - sortorder: '1'
+          color: FF0000
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: memory_rss_[{#CACHE}]
+        - sortorder: '2'
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: memory_peak_[{#CACHE}]
+        - sortorder: '3'
+          color: FFBF00
+          yaxisside: RIGHT
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: memory_fragmentation_ratio_[{#CACHE}]
+      - uuid: 59fbe2a535cf4e6495f98d0628c2105a
+        name: '{#CACHE} redis commands, connections'
+        graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: commands_[{#CACHE}]
+        - sortorder: '1'
+          color: FFBF00
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: reads_[{#CACHE}]
+        - sortorder: '2'
+          color: F06292
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: writes_[{#CACHE}]
+        - sortorder: '3'
+          color: FF0000
+          yaxisside: RIGHT
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: connections_[{#CACHE}]
+        - sortorder: '4'
+          color: 2774A4
+          yaxisside: RIGHT
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: connections_rejected_[{#CACHE}]
+      - uuid: 2b3dff85771346a08e405bd1a5c96aec
+        name: '{#CACHE} redis cpu'
+        ymin_type_1: FIXED
+        ymax_type_1: FIXED
+        graph_items:
+        - color: FF0000
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: cpu_sys_[{#CACHE}]
+        - sortorder: '1'
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: cpu_user_[{#CACHE}]
+      - uuid: 857049a6b3ea4aafba12f11b3ec15d10
+        name: '{#CACHE} redis keyspace'
+        graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: keyspace_hits_[{#CACHE}]
+        - sortorder: '1'
+          color: FF0000
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: keyspace_misses_[{#CACHE}]
+      - uuid: 391806320f414dab94e5a2809a15ae8d
+        name: '{#CACHE} redis network'
+        graph_items:
+        - color: 0080FF
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: net_input_[{#CACHE}]
+        - sortorder: '1'
+          color: 80FF00
+          calc_fnc: ALL
+          item:
+            host: RERO Invenio Monitoring
+            key: net_output_[{#CACHE}]
+      master_item:
+        key: redis
+      lld_macro_paths:
+      - lld_macro: '{#CACHE}'
+        path: $.name
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.*
+    - uuid: 68365d1f30fe483682d95e955f9ead64
+      name: snapshot repository discovery
+      type: DEPENDENT
+      key: snapshot_repositories
+      delay: '0'
+      lifetime: 7d
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.repositories.*
+      master_item:
+        key: snapshots
+      lld_macro_paths:
+      - lld_macro: '{#REPO}'
+        path: $.name
+      item_prototypes:
+      - uuid: c32cde1151d2495bb2de3140fbf9a91a
+        name: snapshots {#REPO} last success age
+        type: DEPENDENT
+        key: snapshot_age[{#REPO}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.repositories['{#REPO}'].last_success_age
+          error_handler: CUSTOM_VALUE
+          error_handler_params: '999999999'
+        master_item:
+          key: snapshots
+        tags:
+        - tag: Monitoring
+          value: snapshots
+        units: s
+      - uuid: ac55b7ec3fa94f9d9b49ccea02bda632
+        name: snapshots {#REPO} count
+        type: DEPENDENT
+        key: snapshot_count[{#REPO}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $.repositories['{#REPO}'].count
+        master_item:
+          key: snapshots
+        tags:
+        - tag: Monitoring
+          value: snapshots
+      trigger_prototypes:
+      - uuid: 13fa346190e84bb4ac2525f502aff18e
+        expression: last(/RERO Invenio Monitoring/snapshot_age[{#REPO}])>{$SNAPSHOT.MAXAGE:"{#REPO}"} and {$SNAPSHOT.MONITOR}=1
+        name: no successful snapshot in {#REPO} for {$SNAPSHOT.MAXAGE:"{#REPO}"}s
+        priority: HIGH
+        description: The index backups have stopped. Set {$SNAPSHOT.MONITOR} to 0 where no snapshots are made.
+    - uuid: b6fdf9083d524c1598db10976e816138
+      name: queue discovery
+      type: DEPENDENT
+      key: queues_discovery
+      delay: '0'
+      lifetime: 7d
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.*
+      master_item:
+        key: queues
+      lld_macro_paths:
+      - lld_macro: '{#QUEUE}'
+        path: $.name
+      item_prototypes:
+      - uuid: fe57bd8b86894e468a19f4a54b32cb54
+        name: queue {#QUEUE} messages
+        type: DEPENDENT
+        key: queue_messages[{#QUEUE}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $['{#QUEUE}'].messages
+        master_item:
+          key: queues
+        tags:
+        - tag: Monitoring
+          value: queues
+      - uuid: 877802c5b6904fe19a1a9d0d06e5ea81
+        name: queue {#QUEUE} consumers
+        type: DEPENDENT
+        key: queue_consumers[{#QUEUE}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $['{#QUEUE}'].consumers
+        master_item:
+          key: queues
+        tags:
+        - tag: Monitoring
+          value: queues
+      trigger_prototypes:
+      - uuid: adafcb27bccd4b3cb00f3cff035a722d
+        expression: min(/RERO Invenio Monitoring/queue_messages[{#QUEUE}],30m)>0 and max(/RERO Invenio Monitoring/queue_consumers[{#QUEUE}],30m)=0
+        name: 'queue {#QUEUE}: messages waiting without consumer'
+        priority: AVERAGE
+        description: 'Nothing reads the queue: start its workers or the indexing tasks.'
+      - uuid: 04d490d744da4aa2a6492c2262609ab5
+        expression: min(/RERO Invenio Monitoring/queue_messages[{#QUEUE}],1h)>{$QUEUE.MAX:"{#QUEUE}"}
+        name: 'queue {#QUEUE}: more than {$QUEUE.MAX:"{#QUEUE}"} messages for 1h'
+        priority: WARNING
+        description: ''
+    - uuid: 6cbcd0d40a4a4fb486da6823787c2604
+      name: harvest discovery
+      type: DEPENDENT
+      key: harvests_discovery
+      delay: '0'
+      lifetime: 7d
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.*
+      master_item:
+        key: harvests
+      lld_macro_paths:
+      - lld_macro: '{#SOURCE}'
+        path: $.name
+      item_prototypes:
+      - uuid: b5d95517fd8643bc94b1c840a47e94e9
+        name: harvest {#SOURCE} age
+        type: DEPENDENT
+        key: harvest_age[{#SOURCE}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $['{#SOURCE}'].age
+          error_handler: CUSTOM_VALUE
+          error_handler_params: '999999999'
+        master_item:
+          key: harvests
+        tags:
+        - tag: Monitoring
+          value: harvests
+        units: s
+      trigger_prototypes:
+      - uuid: d87615c237b241b0853662507e15d964
+        expression: last(/RERO Invenio Monitoring/harvest_age[{#SOURCE}])>{$HARVEST.MAXAGE:"{#SOURCE}"}
+        name: harvest {#SOURCE} not run for {$HARVEST.MAXAGE:"{#SOURCE}"}s
+        priority: AVERAGE
+        description: The source may be unreachable (e.g. services.dnb.de for GND) or the harvest task stopped.
+    - uuid: ff249a73f9a44eb4aa67558cec902406
+      name: scheduled task discovery
+      type: DEPENDENT
+      key: timestamps_discovery
+      delay: '0'
+      lifetime: 7d
+      preprocessing:
+      - type: JSONPATH
+        parameters:
+        - $.*
+      master_item:
+        key: timestamps
+      lld_macro_paths:
+      - lld_macro: '{#NAME}'
+        path: $.name
+      item_prototypes:
+      - uuid: 648c189bd0334e508621d6625d9dee87
+        name: task {#NAME} age
+        type: DEPENDENT
+        key: timestamp_age[{#NAME}]
+        delay: '0'
+        preprocessing:
+        - type: JSONPATH
+          parameters:
+          - $[?(@.name=='{#NAME}')].age.first()
+        master_item:
+          key: timestamps
+        tags:
+        - tag: Monitoring
+          value: timestamps
+        units: s
+      trigger_prototypes:
+      - uuid: 2e4b377252244844a617dfbe3b8cc4c5
+        expression: last(/RERO Invenio Monitoring/timestamp_age[{#NAME}])>{$TIMESTAMP.MAXAGE:"{#NAME}"}
+        name: task {#NAME} not run for {$TIMESTAMP.MAXAGE:"{#NAME}"}s
+        priority: AVERAGE
+        description: ''
+    httptests:
+    - uuid: 412f0b2e21e745c388ce8719c5cd1b0b
+      name: API
+      attempts: '3'
+      steps:
+      - name: api
+        url: '{$ADDRESS}{$WEB_API}'
+        follow_redirects: 'NO'
+        status_codes: 200, 302, 308, 401
+      tags:
+      - tag: Application
+        value: web
+    - uuid: 72191ea1eb154c12873109c5b30d42f1
+      name: UI
+      attempts: '3'
+      steps:
+      - name: ping
+        url: '{$ADDRESS}{$WEB_UI}'
+        follow_redirects: 'NO'
+        required: OK
+        status_codes: 200, 302
+      tags:
+      - tag: Application
+        value: web
+    tags:
+    - tag: target
+      value: invenio
+    macros:
+    - macro: '{$ACCESS_TOKEN}'
+      description: Token of a user with the monitoring role.
+    - macro: '{$DB.TRANSACTION.MAXAGE}'
+      value: '3600'
+      description: Longest open transaction, in seconds
+    - macro: '{$DB_CONNECTION_COUNTS}'
+      value: /api/monitoring/db_connection_counts
+      description: DB connection counts
+    - macro: '{$HARVEST.MAXAGE}'
+      value: '172800'
+      description: Seconds since the last run of a harvest source (2 days)
+    - macro: '{$HARVESTS}'
+      value: /api/monitoring/harvests
+      description: Harvests url path
+    - macro: '{$QUEUE.MAX}'
+      value: '100000'
+      description: Messages waiting in a queue for 1h
+    - macro: '{$QUEUES}'
+      value: /api/monitoring/queues
+      description: Queues url path
+    - macro: '{$REDIS}'
+      value: /api/monitoring/redis
+      description: REDIS info
+    - macro: '{$SEARCH_DB_COUNTS}'
+      value: /api/monitoring/search_db_counts
+      description: Search and DB counts url path
+    - macro: '{$SEARCH_INDICES}'
+      value: /api/monitoring/search_indices
+      description: Search indices url path
+    - macro: '{$SEARCH}'
+      value: /api/monitoring/search
+      description: Search cluster health url path
+    - macro: '{$SNAPSHOT.MAXAGE}'
+      value: '93600'
+      description: Seconds since the last successful snapshot (26h)
+    - macro: '{$SNAPSHOT.MONITOR}'
+      value: '1'
+      description: 1 where snapshots are made (production), 0 elsewhere
+    - macro: '{$SNAPSHOTS}'
+      value: /api/monitoring/snapshots
+      description: Snapshots url path
+    - macro: '{$TIMESTAMP.MAXAGE:"add_cover_urls"}'
+      value: '691200'
+      description: Weekly task (8 days)
+    - macro: '{$TIMESTAMP.MAXAGE:"delete_drafts"}'
+      value: '691200'
+      description: Weekly task (8 days)
+    - macro: '{$TIMESTAMP.MAXAGE:"delete_inactive_patrons"}'
+      value: '2764800'
+      description: Monthly task (32 days)
+    - macro: '{$TIMESTAMP.MAXAGE:"delete_orphan_harvested"}'
+      value: '691200'
+      description: Weekly task (8 days)
+    - macro: '{$TIMESTAMP.MAXAGE:"replace_identified_by"}'
+      value: '691200'
+      description: Weekly task (8 days)
+    - macro: '{$TIMESTAMP.MAXAGE}'
+      value: '93600'
+      description: Seconds since the last run of a scheduled task (26h, daily tasks)
+    - macro: '{$TIME_STAMPS}'
+      value: /api/monitoring/timestamps
+      description: Timestamps
+    - macro: '{$WEB_API}'
+      value: /api/documents/
+      description: web scenario API
+    - macro: '{$WEB_UI}'
+      value: /ping
+      description: web scenario UI
+    dashboards:
+    - uuid: 44bf3d9322514e548381a9d18652c6a2
+      name: Invenio
+      auto_start: 'YES'
+      pages:
+      - name: DB
+        widgets:
+        - type: graph
+          name: DB Connections
+          width: '72'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: db connections
+          - type: STRING
+            name: reference
+            value: CAAAC
+        - type: graphprototype
+          y: '5'
+          width: '72'
+          height: '32'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '4'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#INDEX} DB search counts'
+          - type: STRING
+            name: reference
+            value: CAAAB
+          - type: INTEGER
+            name: rows
+            value: '8'
+      - name: Redis
+        widgets:
+        - type: graphprototype
+          width: '36'
+          height: '5'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '1'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#CACHE} redis cpu'
+          - type: STRING
+            name: reference
+            value: CAAAD
+        - type: graphprototype
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '1'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#CACHE} redis network'
+          - type: STRING
+            name: reference
+            value: CAAAF
+        - type: graphprototype
+          y: '10'
+          width: '72'
+          height: '5'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '1'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#CACHE} redis keyspace'
+          - type: STRING
+            name: reference
+            value: CAAAH
+        - type: graphprototype
+          x: '36'
+          width: '36'
+          height: '5'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '1'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#CACHE} memory'
+          - type: STRING
+            name: reference
+            value: CAAAE
+        - type: graphprototype
+          x: '36'
+          y: '5'
+          width: '35'
+          height: '5'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '1'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#CACHE} redis commands, connections'
+          - type: STRING
+            name: reference
+            value: CAAAG
+      - name: WWW
+        widgets:
+        - type: graph
+          width: '72'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid
+            value:
+              host: RERO Invenio Monitoring
+              name: www
+          - type: STRING
+            name: reference
+            value: CAAAI
+      - name: SEARCH
+        widgets:
+        - type: itemhistory
+          width: '36'
+          height: '5'
+          fields:
+          - type: ITEM
+            name: columns.0.itemid
+            value:
+              host: RERO Invenio Monitoring
+              key: search_status
+          - type: STRING
+            name: columns.0.name
+            value: status
+          - type: STRING
+            name: reference
+            value: CAAAJ
+          - type: INTEGER
+            name: show_lines
+            value: '3'
+          - type: INTEGER
+            name: show_timestamp
+            value: '1'
+          - type: STRING
+            name: time_period.from
+            value: now-1y
+          - type: STRING
+            name: time_period.to
+            value: now
+        - type: graph
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid
+            value:
+              host: RERO Invenio Monitoring
+              name: search tasks
+          - type: STRING
+            name: reference
+            value: CAAAK
+        - type: graph
+          x: '36'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid
+            value:
+              host: RERO Invenio Monitoring
+              name: search nodes
+          - type: STRING
+            name: reference
+            value: CAAAM
+        - type: graph
+          x: '36'
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid
+            value:
+              host: RERO Invenio Monitoring
+              name: search shards
+          - type: STRING
+            name: reference
+            value: CAAAL
+      - name: Search indices
+        widgets:
+        - type: graphprototype
+          width: '72'
+          height: '64'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '3'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#INDEX} search'
+          - type: STRING
+            name: reference
+            value: CAAAN
+          - type: INTEGER
+            name: rows
+            value: '15'
+      - name: Search indices OPLG
+        widgets:
+        - type: graphprototype
+          width: '72'
+          height: '64'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '3'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#INDEX} search OPLG'
+          - type: STRING
+            name: reference
+            value: CAAAO
+          - type: INTEGER
+            name: rows
+            value: '15'
+      - name: Search indices deleted
+        widgets:
+        - type: graphprototype
+          width: '72'
+          height: '64'
+          fields:
+          - type: INTEGER
+            name: columns
+            value: '3'
+          - type: GRAPH_PROTOTYPE
+            name: graphid.0
+            value:
+              host: RERO Invenio Monitoring
+              name: '{#INDEX} search deleted'
+          - type: STRING
+            name: reference
+            value: CAAAP
+          - type: INTEGER
+            name: rows
+            value: '15'
+    valuemaps:
+    - uuid: 6ebe043695714038a1c04c3676099573
+      name: Search cluster state
+      mappings:
+      - value: '0'
+        newvalue: green
+      - value: '1'
+        newvalue: yellow
+      - value: '2'
+        newvalue: red
+      - value: '255'
+        newvalue: unknown
+  triggers:
+  - uuid: f06f2c1c53124c4ba283aa7df90a0c03
+    expression: last(/RERO Invenio Monitoring/db_connections_used) + last(/RERO Invenio Monitoring/db_connections_reserved)
+      >= last(/RERO Invenio Monitoring/db_connections_max) - last(/RERO Invenio Monitoring/db_connections_max)*10 / 100
+    name: too many db connections
+    priority: AVERAGE
+    description: Too many DB connections on {$ADDRESS}!
+  - uuid: 6db7a91143cb4349b72007e40813e72f
+    expression: length(last(/RERO Invenio Monitoring/web.test.error[API]))>0 and last(/RERO Invenio Monitoring/web.test.fail[API])>0
+    name: 'Web scenario "API" failed: {ITEM.VALUE}'
+    url: '{$ADDRESS}{$WEB_API}'
+    priority: AVERAGE
+    description: '{$ADDRESS}{$WEB_API} API doesn''t seem to work correctly. Please check it.'
+    manual_close: 'YES'
+    tags:
+    - tag: sla
+      value: availability
+  - uuid: 1577979bb1264d3da8ad6bbc6863a2bf
+    expression: last(/RERO Invenio Monitoring/web.test.in[API,,bps])<300000
+    name: Web scenario "API" slow
+    url: '{$ADDRESS}{$WEB_API}'
+    status: DISABLED
+    priority: WARNING
+    manual_close: 'YES'
+  - uuid: 3ca08c230f3d48b8883df3a14c4bb1b9
+    expression: length(last(/RERO Invenio Monitoring/web.test.error[UI]))>0 and last(/RERO Invenio Monitoring/web.test.fail[UI])>0
+    name: 'Web scenario "UI" failed: {ITEM.VALUE}'
+    url: '{$ADDRESS}{$WEB_UI}'
+    priority: AVERAGE
+    description: '{$ADDRESS}{$WEB_UI}UI doesn''t seem to work correctly. Please check it.'
+    manual_close: 'YES'
+    tags:
+    - tag: sla
+      value: availability
+  - uuid: 400415635b0244d88a13ce52b1b5c267
+    expression: last(/RERO Invenio Monitoring/web.test.in[UI,,bps])<30000
+    name: Web scenario "UI" slow
+    url: '{$ADDRESS}{$WEB_UI}'
+    status: DISABLED
+    priority: WARNING
+    manual_close: 'YES'
+  graphs:
+  - uuid: 2cefc20213e144d69ebaa6e64ef600bf
+    name: db connections
+    ymin_type_1: FIXED
+    ymax_type_1: ITEM
+    ymax_item_1:
+      host: RERO Invenio Monitoring
+      key: db_connections_max
+    graph_items:
+    - color: 29B6F6
+      item:
+        host: RERO Invenio Monitoring
+        key: db_connections_used
+    - sortorder: '1'
+      color: 6C59DC
+      item:
+        host: RERO Invenio Monitoring
+        key: db_connections_reserved
+    - sortorder: '2'
+      color: FF0000
+      yaxisside: RIGHT
+      item:
+        host: RERO Invenio Monitoring
+        key: db_connections_free
+  - uuid: 52ac48168ea14dd3ae14859d52ddd14f
+    name: search nodes
+    graph_items:
+    - sortorder: '1'
+      color: 199C0D
+      item:
+        host: RERO Invenio Monitoring
+        key: number_of_data_nodes
+    - sortorder: '2'
+      color: F63100
+      item:
+        host: RERO Invenio Monitoring
+        key: number_of_nodes
+  - uuid: b3b58730aae84259a218f43fc7574553
+    name: search shards
+    graph_items:
+    - sortorder: '1'
+      color: 199C0D
+      item:
+        host: RERO Invenio Monitoring
+        key: active_primary_shards
+    - sortorder: '2'
+      color: F63100
+      item:
+        host: RERO Invenio Monitoring
+        key: active_shards
+    - sortorder: '3'
+      color: 2774A4
+      item:
+        host: RERO Invenio Monitoring
+        key: initializing_shards
+    - sortorder: '4'
+      color: F7941D
+      item:
+        host: RERO Invenio Monitoring
+        key: relocating_shards
+    - sortorder: '5'
+      color: FC6EA3
+      item:
+        host: RERO Invenio Monitoring
+        key: unassigned_shards
+  - uuid: 1ebeac1c31fb4b7ba89b8908ae61644d
+    name: search tasks
+    graph_items:
+    - sortorder: '1'
+      color: 199C0D
+      item:
+        host: RERO Invenio Monitoring
+        key: task_max_waiting_in_queue
+    - sortorder: '2'
+      color: F63100
+      yaxisside: RIGHT
+      item:
+        host: RERO Invenio Monitoring
+        key: number_of_pending_tasks
+  - uuid: dc8dd97eb10e40e0986b5dfef9991d69
+    name: www
+    graph_items:
+    - sortorder: '1'
+      color: 199C0D
+      item:
+        host: RERO Invenio Monitoring
+        key: web.test.in[API,api,bps]
+    - sortorder: '2'
+      color: 2774A4
+      item:
+        host: RERO Invenio Monitoring
+        key: web.test.in[UI,ping,bps]
+    - sortorder: '3'
+      color: F57F17
+      yaxisside: RIGHT
+      item:
+        host: RERO Invenio Monitoring
+        key: web.test.time[API,api,resp]
+    - sortorder: '4'
+      color: 6A1B9A
+      yaxisside: RIGHT
+      item:
+        host: RERO Invenio Monitoring
+        key: web.test.time[UI,ping,resp]

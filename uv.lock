@@ -624,6 +624,19 @@ wheels = [
 ]
 
 [[package]]
+name = "flask-caching"
+version = "2.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cachelib" },
+    { name = "flask" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/74/37c0cfc97444bc639a2854808c55ef61266c3637ab0a64c794b9f6ea1649/flask_caching-2.5.1.tar.gz", hash = "sha256:f75b451fde3faac0e278da72263818134deca8c4ba6bb07b9b3b238991368dae", size = 219102, upload-time = "2026-09-04T18:59:15.541Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/62/e22db0afb98b481878f22c0cec125d29b33948863b4e3f4a083e610c40c7/flask_caching-2.5.1-py3-none-any.whl", hash = "sha256:a8591b0315f033d1f10ba67e318b82b3179e548306195ec08e8f0c5f8ef287bf", size = 35082, upload-time = "2026-09-04T18:59:13.862Z" },
+]
+
+[[package]]
 name = "flask-celeryext"
 version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
@@ -936,6 +949,20 @@ wheels = [
 ]
 
 [[package]]
+name = "invenio-access"
+version = "7.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "invenio-accounts" },
+    { name = "invenio-base" },
+    { name = "invenio-i18n" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/10/8a0664a9ff2988f87f80642c71b61ddd0f3b73b55dd849cc9a6beb4b2a68/invenio_access-7.1.0.tar.gz", hash = "sha256:2705eaf2a9c2d14f1bc4181292560abb8512fa6a42e700558934ab7dfad0ffe5", size = 28003, upload-time = "2026-09-21T08:38:07.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/b3/997f54cb86a7323c22d6fc539fb505cc251b00857653eaa396c030836cf3/invenio_access-7.1.0-py3-none-any.whl", hash = "sha256:eafedf3274bbf47166e92ca23ed19acf46d6c825a9bcaeea2a59e934011987c0", size = 79599, upload-time = "2026-09-21T08:38:06.383Z" },
+]
+
+[[package]]
 name = "invenio-accounts"
 version = "9.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -990,6 +1017,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/52/a7/9fb93f28dcedab421c4e560b419fde317e6a9d61c74b745cd424ca94c28f/invenio_base-2.4.1.tar.gz", hash = "sha256:a2cd51e1b7db786ad73164c4051e3c5bb3ec08174118a964e4393e64dd22b1a9", size = 16486, upload-time = "2026-07-16T14:42:12.445Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/43/9bccdd5c9a593f89cf45d053c4588d9c83564d2fbef8cfe752b7a62f4782/invenio_base-2.4.1-py3-none-any.whl", hash = "sha256:1655356af811f20eaa291906e0b831caca99e60ffabeddea5728ce86c0ed1b11", size = 21580, upload-time = "2026-07-16T14:42:11.459Z" },
+]
+
+[[package]]
+name = "invenio-cache"
+version = "3.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask-caching" },
+    { name = "invenio-base" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/53/82/da5cd830498da53df2b5bdf9ec49b9688e9a5eaf44592eecf7b65e7718a5/invenio_cache-3.0.2.tar.gz", hash = "sha256:9e8bf45b45480926930d90104f03270c2128ae60e8d55062b51ab6ca01e10aee", size = 7417, upload-time = "2026-08-25T14:13:15.2Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/b6/d33a3e01fbfb591463cc2b9c0eeffa5495f2a508fd7314996e1b5e5c49eb/invenio_cache-3.0.2-py3-none-any.whl", hash = "sha256:eca2ed99a72bd45afbf6883c2a882f769e8f6c78e98bf6a4382e8b2d4d1210ef", size = 10717, upload-time = "2026-08-25T14:13:14.356Z" },
 ]
 
 [[package]]
@@ -2138,6 +2178,8 @@ source = { editable = "." }
 dependencies = [
     { name = "babel" },
     { name = "celery" },
+    { name = "invenio-access" },
+    { name = "invenio-cache" },
     { name = "invenio-db", extra = ["postgresql"] },
     { name = "invenio-i18n" },
     { name = "invenio-oauth2server" },
@@ -2146,6 +2188,8 @@ dependencies = [
     { name = "invenio-rest" },
     { name = "invenio-search", extra = ["opensearch2"] },
     { name = "jsonpatch" },
+    { name = "redis" },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -2161,6 +2205,8 @@ dev = [
 requires-dist = [
     { name = "babel", specifier = ">=2.16.0" },
     { name = "celery", specifier = ">=5.1.0" },
+    { name = "invenio-access", specifier = ">=4.0.0" },
+    { name = "invenio-cache", specifier = ">=2.0.0" },
     { name = "invenio-db", extras = ["postgresql"], specifier = ">=1.1.0" },
     { name = "invenio-i18n", specifier = ">=3.4.2" },
     { name = "invenio-oauth2server", specifier = ">=3.0.0" },
@@ -2169,6 +2215,8 @@ requires-dist = [
     { name = "invenio-rest", specifier = ">=1.2.4" },
     { name = "invenio-search", extras = ["opensearch2"], specifier = ">=2.1.0" },
     { name = "jsonpatch" },
+    { name = "redis", specifier = ">=5.0.0" },
+    { name = "requests", specifier = ">=2.32.0" },
 ]
 
 [package.metadata.requires-dev]
