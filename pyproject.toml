@@ -51,7 +51,11 @@ check_json = "rero_invenio_base.cli.utils:check_json"
 rero = "rero_invenio_base.cli:rero"
 
 [project.entry-points."invenio_base.apps"]
+rero-invenio-base = "rero_invenio_base:REROInvenioBase"
 rero-invenio-base-export = "rero_invenio_base.modules.export.ext:ReroInvenioBaseExportApp"
+
+[project.entry-points."invenio_base.api_apps"]
+rero-invenio-base = "rero_invenio_base:REROInvenioBase"
 
 [project.entry-points."invenio_base.api_blueprints"]
 rero_ils_exports = "rero_invenio_base.modules.export.views:create_blueprint_from_app"
