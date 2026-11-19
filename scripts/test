@@ -86,7 +86,7 @@ poe format --check
 info_msg "Test linting:"
 poe lint
 
-export OPENSEARCH_VERSION=2.19.6
+export OPENSEARCH_VERSION=3
 # `-f` is required: without it docker-services-cli uses the compose file bundled
 # in its own package, which sets no path.repo and so cannot host the snapshot
 # repositories the tests register.

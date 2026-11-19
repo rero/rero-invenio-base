@@ -25,6 +25,7 @@ dependencies = [
     "invenio-search[opensearch2]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
     "invenio-i18n>=3.4.2",
+    "invenio-oauth2server>=3.0.0",
     "invenio-pidstore>=1.2.1",
     "invenio-records-rest>=2.2.0",
     "invenio-rest>=1.2.4",
