@@ -22,12 +22,17 @@ dependencies = [
     "babel>=2.16.0",
     "celery>=5.1.0",
     "jsonpatch",
+    "invenio-access>=4.0.0",
+    "invenio-cache>=2.0.0",
     "invenio-search[opensearch2]>=2.1.0",
     "invenio-db[postgresql]>=1.1.0",
     "invenio-i18n>=3.4.2",
+    "invenio-oauth2server>=3.0.0",
     "invenio-pidstore>=1.2.1",
     "invenio-records-rest>=2.2.0",
     "invenio-rest>=1.2.4",
+    "redis>=5.0.0",
+    "requests>=2.32.0",
 ]
 
 [dependency-groups]
@@ -46,13 +51,19 @@ check_json = "rero_invenio_base.cli.utils:check_json"
 rero = "rero_invenio_base.cli:rero"
 
 [project.entry-points."invenio_base.apps"]
+rero-invenio-base = "rero_invenio_base:REROInvenioBase"
 rero-invenio-base-export = "rero_invenio_base.modules.export.ext:ReroInvenioBaseExportApp"
+
+[project.entry-points."invenio_base.api_apps"]
+rero-invenio-base = "rero_invenio_base:REROInvenioBase"
 
 [project.entry-points."invenio_base.api_blueprints"]
 rero_ils_exports = "rero_invenio_base.modules.export.views:create_blueprint_from_app"
+rero_monitoring = "rero_invenio_base.modules.monitoring.views:blueprint"
 
 [project.entry-points."invenio_celery.tasks"]
 rero = "rero_invenio_base.modules.tasks"
+rero_monitoring = "rero_invenio_base.modules.monitoring.tasks"
 
 [tool.pytest.ini_options]
 addopts = "--color=yes --exclude-warning-annotations --doctest-modules --cov=rero_invenio_base --cov-report=term-missing"

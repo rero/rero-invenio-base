@@ -13,6 +13,7 @@ from uuid import uuid4
 import pytest
 from click.testing import CliRunner
 from flask import Flask
+from invenio_cache import InvenioCache
 from invenio_db import InvenioDB
 from invenio_pidstore import InvenioPIDStore
 from invenio_records_rest import config as _config
@@ -20,6 +21,7 @@ from invenio_search import InvenioSearch, current_search_client
 
 from rero_invenio_base import REROInvenioBase
 from rero_invenio_base.modules.export.ext import ReroInvenioBaseExportApp
+from rero_invenio_base.modules.monitoring.views import blueprint as monitoring_blueprint
 
 
 @pytest.fixture(scope="function")
@@ -95,6 +97,9 @@ def create_app(instance_path):
         InvenioDB(app)
         InvenioPIDStore(app)
         InvenioSearch(app)
+        app.config.setdefault("CACHE_TYPE", "SimpleCache")
+        InvenioCache(app)
+        app.register_blueprint(monitoring_blueprint)
         return app
 
     return factory
