@@ -33,6 +33,7 @@ dependencies = [
     "invenio-rest>=1.2.4",
     "redis>=5.0.0",
     "requests>=2.32.0",
+    "sqlalchemy-celery-beat>=0.9.1",
 ]
 
 [dependency-groups]
